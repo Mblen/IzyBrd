@@ -1,12 +1,13 @@
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
   StyleSheet, Dimensions, FlatList, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getListings, subscribeListings } from '../../lib/listings';
+import { getMyFlips, DbFlip } from '../../lib/flips';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 const { width: W } = Dimensions.get('window');
 const CELL = (W - 4) / 3;
@@ -31,11 +32,23 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [promoVisible, setPromoVisible] = useState(true);
 
-  const myListings = useSyncExternalStore(subscribeListings, getListings, getListings);
+  // Load the current user's real flips from the database; refetch on focus so
+  // a flip just posted from the Sell form shows up immediately.
+  const [myFlips, setMyFlips] = useState<DbFlip[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!isSupabaseConfigured) return;
+      let active = true;
+      getMyFlips()
+        .then(f => { if (active) setMyFlips(f); })
+        .catch(() => { /* leave the mock seed data in place on error */ });
+      return () => { active = false; };
+    }, [])
+  );
 
-  // Flips created from the Sell form show up first in the Shop tab
+  // Real flips first, then the mock seed listings beneath them
   const shopData = [
-    ...myListings.map(l => ({ id: l.id, title: l.title, price: l.price, color: l.color, image: l.image })),
+    ...myFlips.map(f => ({ id: f.id, title: f.title, price: f.price, color: '#1a1a1a', image: f.image_url ?? '' })),
     ...MY_LISTINGS.map(l => ({ ...l, image: '' })),
   ];
   const data =

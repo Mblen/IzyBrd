@@ -1,4 +1,4 @@
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,21 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { addOffer } from '../../lib/offers';
-import { getListing } from '../../lib/listings';
+import { getFlip } from '../../lib/flips';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import { isSold, subscribeOrders } from '../../lib/orders';
+
+type FlipView = {
+  seller: string; rating: number; reviews: number;
+  style: string; size: string; condition: string;
+  title: string; story: string; price: number; city: string; image: string;
+};
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SHIPPING = 5;
@@ -73,14 +81,44 @@ const FLIPS: Record<string, {
 
 export default function FlipDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  // A user-created listing takes priority; otherwise fall back to mock flips
-  const listing = id ? getListing(id) : undefined;
-  const flip = listing ?? FLIPS[id ?? '1'] ?? FLIPS['1'];
+  // Seeded feed flips ('1'-'5') come from mock data; anything else is a real
+  // flip loaded from the database.
+  const mock: FlipView | undefined = id ? FLIPS[id] : undefined;
+  const [dbFlip, setDbFlip] = useState<FlipView | null>(null);
+  const [loading, setLoading] = useState(!mock && isSupabaseConfigured && !!id);
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [offerVisible, setOfferVisible] = useState(false);
   const [offerAmount, setOfferAmount] = useState('');
   const [offerSent, setOfferSent] = useState(false);
+
+  useEffect(() => {
+    if (mock || !id || !isSupabaseConfigured) return;
+    let active = true;
+    getFlip(id)
+      .then(f => {
+        if (!active) return;
+        if (f) {
+          setDbFlip({
+            seller: f.seller_username ? `@${f.seller_username}` : '@seller',
+            rating: 0,
+            reviews: 0,
+            style: f.style ?? '',
+            size: f.size ?? '',
+            condition: f.condition ?? '',
+            title: f.title,
+            story: f.story ?? '',
+            price: f.price,
+            city: f.city ?? '',
+            image: f.image_url ?? '',
+          });
+        }
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [id]);
+
+  const flip = mock ?? dbFlip ?? FLIPS['1'];
   const total = flip.price + SHIPPING;
 
   const sold = useSyncExternalStore(subscribeOrders, () => isSold(id ?? '1'), () => isSold(id ?? '1'));
@@ -103,6 +141,14 @@ export default function FlipDetailScreen() {
       setOfferAmount('');
     }, 1200);
   };
+
+  if (loading) {
+    return (
+      <View style={[s.container, s.loadingWrap]}>
+        <ActivityIndicator color="#000" />
+      </View>
+    );
+  }
 
   return (
     <View style={s.container}>
@@ -288,6 +334,7 @@ export default function FlipDetailScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  loadingWrap: { alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingBottom: 120 },
 
   imageWrap: { width: SCREEN_WIDTH, height: SCREEN_WIDTH * 1.15, backgroundColor: '#f2f2f2' },

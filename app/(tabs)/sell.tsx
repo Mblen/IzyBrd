@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { addListing } from '../../lib/listings';
+import { createFlip } from '../../lib/flips';
 
 const MAX_PHOTOS = 8;
 
@@ -107,8 +107,12 @@ export default function SellScreen() {
   const [condition, setCondition] = useState('');
   const [brand, setBrand] = useState('');
   const [city, setCity] = useState('');
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const canPost = title.length > 0 && price.length > 0 && style.length > 0 && size.length > 0 && condition.length > 0;
+  const canPost =
+    !posting &&
+    title.length > 0 && price.length > 0 && style.length > 0 && size.length > 0 && condition.length > 0;
 
   const pickPhotos = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -132,22 +136,30 @@ export default function SellScreen() {
     setStyle(''); setSize(''); setCondition(''); setBrand(''); setCity('');
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!canPost) return;
-    addListing({
-      title: title.trim(),
-      price: Number(price),
-      story: story.trim(),
-      style,
-      size,
-      condition,
-      brand: brand.trim(),
-      city: city.trim() || 'Somewhere',
-      image: photos[0] ?? '',
-    });
-    resetForm();
-    // Drop them on their profile so the new flip is visible at once
-    router.push('/(tabs)/profile' as any);
+    setError(null);
+    setPosting(true);
+    try {
+      await createFlip({
+        title: title.trim(),
+        price: Number(price),
+        story: story.trim(),
+        style,
+        size,
+        condition,
+        brand: brand.trim(),
+        city: city.trim() || 'Somewhere',
+        imageUri: photos[0] ?? '',
+      });
+      resetForm();
+      // Drop them on their profile so the new flip is visible at once
+      router.push('/(tabs)/profile' as any);
+    } catch (e: any) {
+      setError(e?.message ?? 'Could not post your flip. Try again.');
+    } finally {
+      setPosting(false);
+    }
   };
 
   return (
@@ -166,10 +178,17 @@ export default function SellScreen() {
           onPress={handlePost}
         >
           <Text style={[styles.postBtnText, canPost && styles.postBtnTextActive]}>
-            Post
+            {posting ? 'Posting…' : 'Post'}
           </Text>
         </TouchableOpacity>
       </View>
+
+      {error && (
+        <View style={styles.errorBar}>
+          <Ionicons name="alert-circle-outline" size={15} color="#c0392b" />
+          <Text style={styles.errorTxt}>{error}</Text>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -378,6 +397,16 @@ const styles = StyleSheet.create({
   postBtnTextActive: {
     color: '#fff',
   },
+
+  errorBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fdecea',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  errorTxt: { flex: 1, fontSize: 13, color: '#c0392b' },
 
   // Scroll
   scroll: {

@@ -2,13 +2,26 @@ import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function RootLayout() {
-  // Show onboarding only on first launch
   useEffect(() => {
-    AsyncStorage.getItem('onboarded').then(v => {
-      if (v !== 'true') router.replace('/onboarding' as any);
+    // Without backend keys, keep the original demo flow (onboarding once).
+    if (!isSupabaseConfigured) {
+      AsyncStorage.getItem('onboarded').then(v => {
+        if (v !== 'true') router.replace('/onboarding' as any);
+      });
+      return;
+    }
+
+    // With a backend, gate the app on an auth session.
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) router.replace('/auth' as any);
     });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) router.replace('/auth' as any);
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   return (
