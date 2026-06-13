@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { isSold, subscribeOrders } from '../../lib/orders';
+import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
 import { getFeedFlips } from '../../lib/flips';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
@@ -135,7 +135,7 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [likes, setLikes] = useState(item.likes);
-  const sold = useSyncExternalStore(subscribeOrders, () => isSold(item.id), () => isSold(item.id));
+  const sold = useSyncExternalStore(subscribeLocalOrders, () => isLocalSold(item.id), () => isLocalSold(item.id));
 
   const toggleLike = () => {
     setLiked((v) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,17 +6,22 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { addOrder } from '../../lib/orders';
+import { createOrder } from '../../lib/orders';
+import { getFlip } from '../../lib/flips';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 const SHIPPING = 5;
 const FEE = 2;
 
-// Mock data - same flips as the home feed (all data is inline per project convention)
-const FLIPS: Record<string, { title: string; seller: string; price: number; condition: string; size: string; image: string }> = {
+type CheckoutFlip = { title: string; seller: string; price: number; condition: string; size: string; image: string; sellerId?: string };
+
+// Seeded demo flips (the feed's '1'..'5'); real flips load from the database.
+const FLIPS: Record<string, CheckoutFlip> = {
   '1': { title: 'Christy Hoodie', seller: '@christybb', price: 38, condition: 'Like New Without Tags', size: 'One Size', image: 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80' },
   '2': { title: 'Chase Crew', seller: '@haileyflipper', price: 32, condition: 'Gently Used', size: 'One Size', image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80' },
   '3': { title: 'Luke Zip-Up', seller: '@themiaedits', price: 54, condition: 'New With Tags', size: 'One Size', image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=80' },
@@ -26,19 +31,64 @@ const FLIPS: Record<string, { title: string; seller: string; price: number; cond
 
 export default function CheckoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const flip = FLIPS[id ?? '1'] ?? FLIPS['1'];
+  const mock = id ? FLIPS[id] : undefined;
+  const [dbFlip, setDbFlip] = useState<CheckoutFlip | null>(null);
+  const [loading, setLoading] = useState(!mock && isSupabaseConfigured && !!id);
   const [placed, setPlaced] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (mock || !id || !isSupabaseConfigured) return;
+    let active = true;
+    getFlip(id)
+      .then(f => {
+        if (active && f) {
+          setDbFlip({
+            title: f.title,
+            seller: f.seller_username ? `@${f.seller_username}` : '@seller',
+            price: f.price,
+            condition: f.condition ?? '',
+            size: f.size ?? '',
+            image: f.image_url ?? '',
+            sellerId: f.seller_id,
+          });
+        }
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [id]);
+
+  const flip = mock ?? dbFlip ?? FLIPS['1'];
   const total = flip.price + SHIPPING + FEE;
 
-  const placeOrder = () => {
-    addOrder({
-      flipId: id ?? '1',
-      flipTitle: flip.title,
-      seller: flip.seller,
-      total,
-    });
-    setPlaced(true);
+  const placeOrder = async () => {
+    if (placing) return;
+    setError(null);
+    setPlacing(true);
+    try {
+      await createOrder({
+        flipId: id ?? '1',
+        flipTitle: flip.title,
+        seller: flip.seller,
+        sellerId: flip.sellerId,
+        total,
+      });
+      setPlaced(true);
+    } catch (e: any) {
+      setError(e?.message ?? 'Could not complete your purchase. Try again.');
+    } finally {
+      setPlacing(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[s.container, s.loadingWrap]} edges={['top', 'bottom']}>
+        <ActivityIndicator color="#000" />
+      </SafeAreaView>
+    );
+  }
 
   if (placed) {
     return (
@@ -149,8 +199,14 @@ export default function CheckoutScreen() {
 
       {/* Sticky pay bar */}
       <View style={s.payBar}>
-        <TouchableOpacity style={s.payBtn} onPress={placeOrder} activeOpacity={0.85}>
-          <Text style={s.payBtnTxt}>Buy the flip · ${total}</Text>
+        {error && <Text style={s.payError}>{error}</Text>}
+        <TouchableOpacity
+          style={[s.payBtn, placing && s.payBtnOff]}
+          onPress={placeOrder}
+          activeOpacity={0.85}
+          disabled={placing}
+        >
+          <Text style={s.payBtnTxt}>{placing ? 'Processing…' : `Buy the flip · $${total}`}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -159,6 +215,7 @@ export default function CheckoutScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  loadingWrap: { alignItems: 'center', justifyContent: 'center' },
 
   header: {
     flexDirection: 'row',
@@ -213,7 +270,9 @@ const s = StyleSheet.create({
     borderTopColor: '#f0f0f0',
   },
   payBtn: { backgroundColor: '#000', borderRadius: 28, paddingVertical: 15, alignItems: 'center' },
+  payBtnOff: { backgroundColor: '#999' },
   payBtnTxt: { fontSize: 15, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
+  payError: { fontSize: 13, color: '#c0392b', textAlign: 'center', marginBottom: 10 },
 
   // Success state
   successWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 12 },

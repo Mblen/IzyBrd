@@ -1,13 +1,13 @@
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
   StyleSheet, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { getOffers, subscribeOffers } from '../../lib/offers';
-import { getOrders, subscribeOrders } from '../../lib/orders';
+import { router, useFocusEffect } from 'expo-router';
+import { getMyOffers, OfferItem } from '../../lib/offers';
+import { getMyOrders, OrderItem } from '../../lib/orders';
 
 const TABS = ['All', 'Messages', 'Offers', 'Orders', 'Activity'];
 
@@ -85,8 +85,18 @@ function typeIcon(type: string): keyof typeof Ionicons.glyphMap {
 
 export default function InboxScreen() {
   const [active, setActive] = useState('All');
-  const sentOffers = useSyncExternalStore(subscribeOffers, getOffers, getOffers);
-  const myOrders = useSyncExternalStore(subscribeOrders, getOrders, getOrders);
+  const [sentOffers, setSentOffers] = useState<OfferItem[]>([]);
+  const [myOrders, setMyOrders] = useState<OrderItem[]>([]);
+
+  // Load offers + orders from the database whenever the inbox gains focus
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getMyOffers().then(o => { if (active) setSentOffers(o); }).catch(() => {});
+      getMyOrders().then(o => { if (active) setMyOrders(o); }).catch(() => {});
+      return () => { active = false; };
+    }, [])
+  );
 
   // Offers you sent from a flip detail, shaped like inbox items
   const sentItems = sentOffers.map(o => ({

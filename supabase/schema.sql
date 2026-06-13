@@ -112,6 +112,26 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- ---------------------------------------------------------------------------
+-- When an order is placed, mark the flip sold. Runs server-side (security
+-- definer) so the buyer doesn't need update rights on the seller's flip.
+-- ---------------------------------------------------------------------------
+create or replace function public.mark_flip_sold()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  update public.flips set status = 'sold' where id = new.flip_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_order_created on public.orders;
+create trigger on_order_created
+  after insert on public.orders
+  for each row execute function public.mark_flip_sold();
+
 -- ===========================================================================
 -- Row Level Security
 -- A public marketplace: everyone can read profiles and flips; you can only

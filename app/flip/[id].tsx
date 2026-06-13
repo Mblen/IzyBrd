@@ -19,24 +19,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { addOffer } from '../../lib/offers';
 import { getFlip } from '../../lib/flips';
 import { isSupabaseConfigured } from '../../lib/supabase';
-import { isSold, subscribeOrders } from '../../lib/orders';
+import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
 
 type FlipView = {
   seller: string; rating: number; reviews: number;
   style: string; size: string; condition: string;
   title: string; story: string; price: number; city: string; image: string;
+  sellerId?: string; status?: 'active' | 'sold';
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SHIPPING = 5;
 
 // Mock data — same flips as the home feed (all data is inline per project convention)
-const FLIPS: Record<string, {
-  seller: string; rating: number; reviews: number;
-  style: string; size: string; condition: string;
-  title: string; story: string; price: number; city: string;
-  image: string;
-}> = {
+const FLIPS: Record<string, FlipView> = {
   '1': {
     seller: '@christybb', rating: 5.0, reviews: 12,
     style: 'Hoodie', size: 'One Size', condition: 'Like New Without Tags',
@@ -91,6 +87,8 @@ export default function FlipDetailScreen() {
   const [offerVisible, setOfferVisible] = useState(false);
   const [offerAmount, setOfferAmount] = useState('');
   const [offerSent, setOfferSent] = useState(false);
+  const [offerSending, setOfferSending] = useState(false);
+  const [offerError, setOfferError] = useState<string | null>(null);
 
   useEffect(() => {
     if (mock || !id || !isSupabaseConfigured) return;
@@ -111,6 +109,8 @@ export default function FlipDetailScreen() {
             price: f.price,
             city: f.city ?? '',
             image: f.image_url ?? '',
+            sellerId: f.seller_id,
+            status: f.status,
           });
         }
       })
@@ -121,25 +121,34 @@ export default function FlipDetailScreen() {
   const flip = mock ?? dbFlip ?? FLIPS['1'];
   const total = flip.price + SHIPPING;
 
-  const sold = useSyncExternalStore(subscribeOrders, () => isSold(id ?? '1'), () => isSold(id ?? '1'));
+  const localSold = useSyncExternalStore(subscribeLocalOrders, () => isLocalSold(id ?? ''), () => isLocalSold(id ?? ''));
+  const sold = flip.status === 'sold' || localSold;
 
   // Quick-pick offers: 10% / 15% / 20% under asking
   const quickOffers = [0.9, 0.85, 0.8].map(m => Math.floor(flip.price * m));
 
-  const sendOffer = () => {
-    if (!offerAmount || Number(offerAmount) <= 0) return;
-    addOffer({
-      flipId: id ?? '1',
-      flipTitle: flip.title,
-      seller: flip.seller,
-      amount: Number(offerAmount),
-    });
-    setOfferSent(true);
-    setTimeout(() => {
-      setOfferVisible(false);
-      setOfferSent(false);
-      setOfferAmount('');
-    }, 1200);
+  const sendOffer = async () => {
+    if (!offerAmount || Number(offerAmount) <= 0 || offerSending) return;
+    setOfferError(null);
+    setOfferSending(true);
+    try {
+      await addOffer({
+        flipId: id ?? '1',
+        flipTitle: flip.title,
+        seller: flip.seller,
+        amount: Number(offerAmount),
+      });
+      setOfferSent(true);
+      setTimeout(() => {
+        setOfferVisible(false);
+        setOfferSent(false);
+        setOfferAmount('');
+      }, 1200);
+    } catch (e: any) {
+      setOfferError(e?.message ?? 'Could not send your offer. Try again.');
+    } finally {
+      setOfferSending(false);
+    }
   };
 
   if (loading) {
@@ -312,13 +321,18 @@ export default function FlipDetailScreen() {
                 </View>
                 <Text style={s.inputHint}>+ ${SHIPPING} shipping. Seller has 24h to accept.</Text>
 
+                {offerError && <Text style={s.offerError}>{offerError}</Text>}
+
                 <TouchableOpacity
-                  style={[s.sendBtn, (!offerAmount || Number(offerAmount) <= 0) && s.sendBtnOff]}
+                  style={[s.sendBtn, (!offerAmount || Number(offerAmount) <= 0 || offerSending) && s.sendBtnOff]}
                   onPress={sendOffer}
                   activeOpacity={0.85}
+                  disabled={offerSending}
                 >
                   <Text style={s.sendBtnTxt}>
-                    {offerAmount && Number(offerAmount) > 0
+                    {offerSending
+                      ? 'Sending…'
+                      : offerAmount && Number(offerAmount) > 0
                       ? `Send offer · $${Number(offerAmount) + SHIPPING} total`
                       : 'Send offer'}
                   </Text>
@@ -508,6 +522,7 @@ const s = StyleSheet.create({
   inputDollar: { fontSize: 18, fontWeight: '700', color: '#000' },
   input: { flex: 1, fontSize: 17, fontWeight: '600', color: '#000', paddingVertical: 13 },
   inputHint: { fontSize: 12, color: '#999', marginTop: 8, marginBottom: 16 },
+  offerError: { fontSize: 13, color: '#c0392b', marginBottom: 12 },
   sendBtn: { backgroundColor: '#000', borderRadius: 28, paddingVertical: 15, alignItems: 'center' },
   sendBtnOff: { backgroundColor: '#ccc' },
   sendBtnTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
