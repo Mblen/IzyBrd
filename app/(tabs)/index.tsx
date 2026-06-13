@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useSyncExternalStore } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { isSold, subscribeOrders } from '../../lib/orders';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -130,6 +131,7 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [likes, setLikes] = useState(item.likes);
+  const sold = useSyncExternalStore(subscribeOrders, () => isSold(item.id), () => isSold(item.id));
 
   const toggleLike = () => {
     setLiked((v) => {
@@ -236,13 +238,19 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
             <Text style={styles.priceAmount}>${item.price}</Text>
             <Text style={styles.priceShipping}>+ shipping</Text>
           </View>
-          <TouchableOpacity
-            style={styles.buyBtn}
-            activeOpacity={0.85}
-            onPress={() => router.push(`/flip/${item.id}` as any)}
-          >
-            <Text style={styles.buyBtnText}>Buy the flip · ${item.price}</Text>
-          </TouchableOpacity>
+          {sold ? (
+            <View style={[styles.buyBtn, styles.soldBtn]}>
+              <Text style={styles.soldBtnText}>Sold</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.buyBtn}
+              activeOpacity={0.85}
+              onPress={() => router.push(`/flip/${item.id}` as any)}
+            >
+              <Text style={styles.buyBtnText}>Buy the flip · ${item.price}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -540,5 +548,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 0.2,
+  },
+  soldBtn: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  soldBtnText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });

@@ -25,6 +25,11 @@ export function getOrders(): Order[] {
   return orders;
 }
 
+// A flip counts as sold once it has been purchased
+export function isSold(flipId: string): boolean {
+  return orders.some((o) => o.flipId === flipId);
+}
+
 export function subscribeOrders(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

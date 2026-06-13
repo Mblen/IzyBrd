@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { addOffer } from '../../lib/offers';
 import { getListing } from '../../lib/listings';
+import { isSold, subscribeOrders } from '../../lib/orders';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SHIPPING = 5;
@@ -81,6 +82,8 @@ export default function FlipDetailScreen() {
   const [offerAmount, setOfferAmount] = useState('');
   const [offerSent, setOfferSent] = useState(false);
   const total = flip.price + SHIPPING;
+
+  const sold = useSyncExternalStore(subscribeOrders, () => isSold(id ?? '1'), () => isSold(id ?? '1'));
 
   // Quick-pick offers: 10% / 15% / 20% under asking
   const quickOffers = [0.9, 0.85, 0.8].map(m => Math.floor(flip.price * m));
@@ -188,18 +191,27 @@ export default function FlipDetailScreen() {
 
       {/* Sticky bottom bar */}
       <SafeAreaView edges={['bottom']} style={s.bottomBarWrap}>
-        <View style={s.bottomBar}>
-          <TouchableOpacity style={s.offerBtn} activeOpacity={0.8} onPress={() => setOfferVisible(true)}>
-            <Text style={s.offerText}>Make offer</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={s.buyBtn}
-            activeOpacity={0.85}
-            onPress={() => router.push(`/checkout/${id ?? '1'}` as any)}
-          >
-            <Text style={s.buyText}>Buy the flip · ${total}</Text>
-          </TouchableOpacity>
-        </View>
+        {sold ? (
+          <View style={s.bottomBar}>
+            <View style={s.soldBtn}>
+              <Ionicons name="checkmark-circle" size={18} color="#888" />
+              <Text style={s.soldText}>Sold</Text>
+            </View>
+          </View>
+        ) : (
+          <View style={s.bottomBar}>
+            <TouchableOpacity style={s.offerBtn} activeOpacity={0.8} onPress={() => setOfferVisible(true)}>
+              <Text style={s.offerText}>Make offer</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.buyBtn}
+              activeOpacity={0.85}
+              onPress={() => router.push(`/checkout/${id ?? '1'}` as any)}
+            >
+              <Text style={s.buyText}>Buy the flip · ${total}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </SafeAreaView>
 
       {/* Make-offer modal */}
@@ -406,6 +418,17 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   buyText: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
+  soldBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#f2f2f2',
+    borderRadius: 28,
+    paddingVertical: 14,
+  },
+  soldText: { fontSize: 14, fontWeight: '800', color: '#888', letterSpacing: 0.5, textTransform: 'uppercase' },
 
   // Offer modal
   modalBackdrop: { flex: 1, justifyContent: 'flex-end' },
