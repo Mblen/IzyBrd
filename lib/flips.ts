@@ -95,8 +95,23 @@ export async function getMyFlips(): Promise<DbFlip[]> {
   return (data ?? []) as DbFlip[];
 }
 
-// A single flip plus its seller's username (for the detail screen).
+// A flip plus its seller's username (for the feed and detail screen).
 export type DbFlipWithSeller = DbFlip & { seller_username: string | null };
+
+// Active flips from everyone, newest first - powers the home feed.
+export async function getFeedFlips(limit = 30): Promise<DbFlipWithSeller[]> {
+  const { data, error } = await supabase
+    .from('flips')
+    .select('*, profiles:seller_id(username)')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map(row => {
+    const { profiles, ...flip } = row as DbFlip & { profiles: { username: string | null } | null };
+    return { ...flip, seller_username: profiles?.username ?? null };
+  });
+}
 
 export async function getFlip(id: string): Promise<DbFlipWithSeller | null> {
   const { data, error } = await supabase

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useSyncExternalStore } from 'react';
+import React, { useState, useRef, useCallback, useSyncExternalStore } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { isSold, subscribeOrders } from '../../lib/orders';
+import { getFeedFlips } from '../../lib/flips';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -79,6 +81,8 @@ const FLIPS = [
 ];
 
 const FEED_TABS = ['Following', 'Local', 'Collections'];
+
+type FeedItem = typeof FLIPS[number];
 
 // --- Action Button --------------------------------------------------------------
 function ActionBtn({
@@ -260,6 +264,43 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
 // --- Home Screen ----------------------------------------------------------------
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState(0); // default: Following
+  const [dbFlips, setDbFlips] = useState<FeedItem[]>([]);
+
+  // Load real flips from everyone; refetch on focus so a flip you just posted
+  // appears at the top. Mock flips stay beneath so the feed is never empty.
+  useFocusEffect(
+    useCallback(() => {
+      if (!isSupabaseConfigured) return;
+      let active = true;
+      getFeedFlips()
+        .then(flips => {
+          if (!active) return;
+          setDbFlips(
+            flips.map(f => ({
+              id: f.id,
+              seller: f.seller_username ? `@${f.seller_username}` : '@seller',
+              rating: 0,
+              reviews: 0,
+              style: f.style ?? '',
+              size: f.size ?? '',
+              condition: f.condition ?? '',
+              title: f.title,
+              story: f.story ?? '',
+              price: f.price,
+              city: f.city ?? '',
+              likes: 0,
+              comments: 0,
+              imageBg: '#1a1a1a',
+              image: f.image_url ?? '',
+            }))
+          );
+        })
+        .catch(() => { /* keep the mock feed on error */ });
+      return () => { active = false; };
+    }, [])
+  );
+
+  const feedData: FeedItem[] = [...dbFlips, ...FLIPS];
 
   return (
     <View style={styles.container}>
@@ -267,7 +308,7 @@ export default function HomeScreen() {
 
       {/* Full-screen vertical feed */}
       <FlatList
-        data={FLIPS}
+        data={feedData}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <FlipCard item={item} />}
         pagingEnabled
