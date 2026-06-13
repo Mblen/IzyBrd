@@ -11,8 +11,10 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { addListing } from '../../lib/listings';
 
 const MAX_PHOTOS = 8;
 
@@ -125,12 +127,35 @@ export default function SellScreen() {
     setPhotos(prev => prev.filter(p => p !== uri));
   };
 
+  const resetForm = () => {
+    setPhotos([]); setTitle(''); setStory(''); setPrice('');
+    setStyle(''); setSize(''); setCondition(''); setBrand(''); setCity('');
+  };
+
+  const handlePost = () => {
+    if (!canPost) return;
+    addListing({
+      title: title.trim(),
+      price: Number(price),
+      story: story.trim(),
+      style,
+      size,
+      condition,
+      brand: brand.trim(),
+      city: city.trim() || 'Somewhere',
+      image: photos[0] ?? '',
+    });
+    resetForm();
+    // Drop them on their profile so the new flip is visible at once
+    router.push('/(tabs)/profile' as any);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7} onPress={resetForm}>
           <Text style={styles.headerCancel}>Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Flip</Text>
@@ -138,6 +163,7 @@ export default function SellScreen() {
           style={[styles.postBtn, canPost && styles.postBtnActive]}
           activeOpacity={0.8}
           disabled={!canPost}
+          onPress={handlePost}
         >
           <Text style={[styles.postBtnText, canPost && styles.postBtnTextActive]}>
             Post

@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, Dimensions, FlatList,
+  StyleSheet, Dimensions, FlatList, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { getListings, subscribeListings } from '../../lib/listings';
 
 const { width: W } = Dimensions.get('window');
 const CELL = (W - 4) / 3;
@@ -30,8 +31,18 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [promoVisible, setPromoVisible] = useState(true);
 
-  const data = activeTab === 0 ? MY_LISTINGS : activeTab === 1 ? SOLD : [];
-  const activeCount = activeTab === 0 ? MY_LISTINGS.length : activeTab === 1 ? SOLD.length : 0;
+  const myListings = useSyncExternalStore(subscribeListings, getListings, getListings);
+
+  // Flips created from the Sell form show up first in the Shop tab
+  const shopData = [
+    ...myListings.map(l => ({ id: l.id, title: l.title, price: l.price, color: l.color, image: l.image })),
+    ...MY_LISTINGS.map(l => ({ ...l, image: '' })),
+  ];
+  const data =
+    activeTab === 0 ? shopData
+    : activeTab === 1 ? SOLD.map(l => ({ ...l, image: '' }))
+    : [];
+  const activeCount = activeTab === 0 ? shopData.length : activeTab === 1 ? SOLD.length : 0;
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -136,6 +147,9 @@ export default function ProfileScreen() {
                 activeOpacity={0.85}
                 onPress={() => router.push(`/flip/${item.id}` as any)}
               >
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={s.cellImage} resizeMode="cover" />
+                ) : null}
                 <View style={s.cellFooter}>
                   <Text style={s.cellTitle} numberOfLines={1}>{item.title}</Text>
                   <Text style={s.cellPrice}>${item.price}</Text>
@@ -198,6 +212,7 @@ const s = StyleSheet.create({
   countTxt: { fontSize: 12, color: '#555' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
   cell: { width: CELL, height: CELL },
+  cellImage: { position: 'absolute', top: 0, left: 0, width: CELL, height: CELL },
   cellFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 7, backgroundColor: 'rgba(0,0,0,0.5)' },
   cellTitle: { fontSize: 10, color: '#fff', fontWeight: '600' },
   cellPrice: { fontSize: 11, color: '#fff', fontWeight: '800' },

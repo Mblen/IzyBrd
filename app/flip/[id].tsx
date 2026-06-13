@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { addOffer } from '../../lib/offers';
+import { getListing } from '../../lib/listings';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SHIPPING = 5;
@@ -71,7 +72,9 @@ const FLIPS: Record<string, {
 
 export default function FlipDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const flip = FLIPS[id ?? '1'] ?? FLIPS['1'];
+  // A user-created listing takes priority; otherwise fall back to mock flips
+  const listing = id ? getListing(id) : undefined;
+  const flip = listing ?? FLIPS[id ?? '1'] ?? FLIPS['1'];
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [offerVisible, setOfferVisible] = useState(false);
