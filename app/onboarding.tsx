@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { updateMyProfile } from '../lib/profile';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 const COLLEGES = [
   'Florida International University',
@@ -42,6 +44,14 @@ export default function OnboardingScreen() {
 
   const finish = () => {
     AsyncStorage.setItem('onboarded', 'true');
+    // Save the picked school/handle onto the signed-in user's profile
+    // (best-effort: no-op when there's no backend or no session)
+    if (isSupabaseConfigured) {
+      const fields: { college?: string; username?: string } = {};
+      if (college) fields.college = college;
+      if (username.length >= 3) fields.username = username;
+      if (Object.keys(fields).length) updateMyProfile(fields).catch(() => {});
+    }
     router.replace('/(tabs)' as any);
   };
 

@@ -7,7 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getMyFlips, DbFlip } from '../../lib/flips';
+import { getMyProfile, signOut, Profile } from '../../lib/profile';
 import { isSupabaseConfigured } from '../../lib/supabase';
+
+function initials(name: string): string {
+  const parts = name.replace('@', '').trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || (name[0] ?? '?').toUpperCase();
+}
 
 const { width: W } = Dimensions.get('window');
 const CELL = (W - 4) / 3;
@@ -35,6 +41,7 @@ export default function ProfileScreen() {
   // Load the current user's real flips from the database; refetch on focus so
   // a flip just posted from the Sell form shows up immediately.
   const [myFlips, setMyFlips] = useState<DbFlip[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
   useFocusEffect(
     useCallback(() => {
       if (!isSupabaseConfigured) return;
@@ -42,9 +49,26 @@ export default function ProfileScreen() {
       getMyFlips()
         .then(f => { if (active) setMyFlips(f); })
         .catch(() => { /* leave the mock seed data in place on error */ });
+      getMyProfile()
+        .then(p => { if (active) setProfile(p); })
+        .catch(() => {});
       return () => { active = false; };
     }, [])
   );
+
+  // Real identity when signed in; fall back to the seed persona otherwise
+  const handle = profile?.username ? `@${profile.username}` : '@mariaBrd';
+  const displayName = profile?.full_name || profile?.username || 'Maria Silva';
+  const college = profile?.college || 'Florida International University';
+  const major = profile?.major || 'Computer Science';
+  const bio = profile?.bio || 'collecting good pieces. DM to bundle ✌️';
+  const city = profile?.city || 'Miami, FL';
+  const avatarInitials = initials(displayName);
+
+  const onSignOut = () => {
+    // The root layout sends us to /auth when the session clears
+    signOut();
+  };
 
   // Real flips first, then the mock seed listings beneath them
   const shopData = [
@@ -64,15 +88,15 @@ export default function ProfileScreen() {
         {/* Top bar */}
         <View style={s.topBar}>
           <TouchableOpacity style={s.iconBtn}><Ionicons name="share-outline" size={22} color="#fff" /></TouchableOpacity>
-          <Text style={s.username}>@mariaBrd</Text>
-          <TouchableOpacity style={s.iconBtn}><Ionicons name="menu-outline" size={24} color="#fff" /></TouchableOpacity>
+          <Text style={s.username}>{handle}</Text>
+          <TouchableOpacity style={s.iconBtn} onPress={onSignOut}><Ionicons name="log-out-outline" size={24} color="#fff" /></TouchableOpacity>
         </View>
 
         {/* Avatar + stats */}
         <View style={s.statsRow}>
           <View style={s.avatarWrap}>
             <View style={s.avatar}>
-              <Text style={s.avatarTxt}>MS</Text>
+              <Text style={s.avatarTxt}>{avatarInitials}</Text>
             </View>
           </View>
           <View style={s.statBlock}>
@@ -91,16 +115,16 @@ export default function ProfileScreen() {
 
         {/* Name + college */}
         <View style={s.identityBlock}>
-          <Text style={s.displayName}>Maria Silva</Text>
+          <Text style={s.displayName}>{displayName}</Text>
           <View style={s.uniRow}>
             <Ionicons name="school-outline" size={14} color="rgba(255,255,255,0.8)" />
-            <Text style={s.uniName}>Florida International University</Text>
+            <Text style={s.uniName}>{college}</Text>
           </View>
-          <Text style={s.major}>Computer Science</Text>
-          <Text style={s.bio}>collecting good pieces. DM to bundle ✌️</Text>
+          <Text style={s.major}>{major}</Text>
+          <Text style={s.bio}>{bio}</Text>
           <View style={s.cityRow}>
             <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.6)" />
-            <Text style={s.city}>Miami, FL</Text>
+            <Text style={s.city}>{city}</Text>
           </View>
         </View>
 
