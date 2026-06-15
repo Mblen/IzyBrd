@@ -95,6 +95,18 @@ export async function getMyFlips(): Promise<DbFlip[]> {
   return (data ?? []) as DbFlip[];
 }
 
+// Active flips for a given seller (their public closet).
+export async function getFlipsBySeller(sellerId: string): Promise<DbFlip[]> {
+  const { data, error } = await supabase
+    .from('flips')
+    .select('*')
+    .eq('seller_id', sellerId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+  if (error) return [];
+  return (data ?? []) as DbFlip[];
+}
+
 // A flip plus its seller's username (for the feed and detail screen).
 export type DbFlipWithSeller = DbFlip & { seller_username: string | null };
 

@@ -13,6 +13,16 @@ export type Profile = {
   avatar_url: string | null;
 };
 
+export async function getProfileByUsername(username: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('username', username)
+    .maybeSingle();
+  if (error) return null;
+  return data as Profile | null;
+}
+
 export async function getMyProfile(): Promise<Profile | null> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return null;

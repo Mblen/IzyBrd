@@ -1,21 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, Dimensions,
+  StyleSheet, Dimensions, Image, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { getProfileByUsername } from '../../lib/profile';
+import { getFlipsBySeller } from '../../lib/flips';
+import { isSupabaseConfigured } from '../../lib/supabase';
+
+type SellerView = {
+  handle: string; name: string; rating: number; reviews: number;
+  followers: number; following: number; college: string; city: string; bio: string;
+  flips: { id: string; title: string; price: number; color: string; image?: string }[];
+};
 
 const { width: W } = Dimensions.get('window');
 const CELL = (W - 4) / 3;
 
-// Mock sellers — keyed by handle without the @ (all data is inline per project convention)
-const SELLERS: Record<string, {
-  handle: string; name: string; rating: number; reviews: number;
-  followers: number; following: number; college: string; city: string; bio: string;
-  flips: { id: string; title: string; price: number; color: string }[];
-}> = {
+// Mock sellers — keyed by handle without the @ (fallback for the seeded feed flips)
+const SELLERS: Record<string, SellerView> = {
   christybb: {
     handle: '@christybb', name: 'Christy B', rating: 5.0, reviews: 12,
     followers: 312, following: 98, college: 'UCLA', city: 'Malibu, CA',
@@ -70,11 +75,52 @@ const TABS = ['Shop', 'Sold', 'Likes'];
 
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const seller = SELLERS[(id ?? '').replace('@', '')] ?? SELLERS['christybb'];
+  const username = (id ?? '').replace('@', '');
+  const mockSeller = SELLERS[username];
+  const [dbSeller, setDbSeller] = useState<SellerView | null>(null);
+  const [loading, setLoading] = useState(!mockSeller && isSupabaseConfigured && !!username);
   const [following, setFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
+  useEffect(() => {
+    if (mockSeller || !username || !isSupabaseConfigured) return;
+    let active = true;
+    (async () => {
+      const profile = await getProfileByUsername(username);
+      if (!active) return;
+      if (profile) {
+        const flips = await getFlipsBySeller(profile.id);
+        if (!active) return;
+        setDbSeller({
+          handle: `@${profile.username ?? username}`,
+          name: profile.full_name || profile.username || username,
+          rating: 0,
+          reviews: 0,
+          followers: 0,
+          following: 0,
+          college: profile.college || '',
+          city: profile.city || '',
+          bio: profile.bio || '',
+          flips: flips.map(f => ({ id: f.id, title: f.title, price: f.price, color: '#1a1a1a', image: f.image_url ?? '' })),
+        });
+      }
+      setLoading(false);
+    })();
+    return () => { active = false; };
+  }, [username]);
+
+  // Real seller when found; otherwise the seeded mock (or a safe default)
+  const seller: SellerView = mockSeller ?? dbSeller ?? SELLERS['christybb'];
+
   const data = activeTab === 0 ? seller.flips : [];
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[s.container, s.loadingWrap]} edges={['top']}>
+        <ActivityIndicator color="#fff" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -94,7 +140,7 @@ export default function UserProfileScreen() {
         <View style={s.statsRow}>
           <View style={s.avatar}>
             <Text style={s.avatarTxt}>
-              {seller.name.split(' ').map(p => p[0]).join('')}
+              {seller.name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()}
             </Text>
           </View>
           <View style={s.statBlock}>
@@ -114,19 +160,25 @@ export default function UserProfileScreen() {
         {/* Identity */}
         <View style={s.identityBlock}>
           <Text style={s.displayName}>{seller.name}</Text>
-          <View style={s.metaRow}>
-            <Ionicons name="school-outline" size={14} color="rgba(255,255,255,0.8)" />
-            <Text style={s.metaTxt}>{seller.college}</Text>
-          </View>
-          <View style={s.metaRow}>
-            <Ionicons name="star" size={12} color="#fff" />
-            <Text style={s.metaTxt}>{seller.rating.toFixed(1)} · {seller.reviews} reviews</Text>
-          </View>
-          <Text style={s.bio}>{seller.bio}</Text>
-          <View style={s.metaRow}>
-            <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.6)" />
-            <Text style={s.cityTxt}>{seller.city}</Text>
-          </View>
+          {seller.college ? (
+            <View style={s.metaRow}>
+              <Ionicons name="school-outline" size={14} color="rgba(255,255,255,0.8)" />
+              <Text style={s.metaTxt}>{seller.college}</Text>
+            </View>
+          ) : null}
+          {seller.reviews > 0 ? (
+            <View style={s.metaRow}>
+              <Ionicons name="star" size={12} color="#fff" />
+              <Text style={s.metaTxt}>{seller.rating.toFixed(1)} · {seller.reviews} reviews</Text>
+            </View>
+          ) : null}
+          {seller.bio ? <Text style={s.bio}>{seller.bio}</Text> : null}
+          {seller.city ? (
+            <View style={s.metaRow}>
+              <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.6)" />
+              <Text style={s.cityTxt}>{seller.city}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Follow / Message */}
@@ -173,6 +225,9 @@ export default function UserProfileScreen() {
                 activeOpacity={0.85}
                 onPress={() => router.push(`/flip/${item.id}` as any)}
               >
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={s.cellImage} resizeMode="cover" />
+                ) : null}
                 <View style={s.cellFooter}>
                   <Text style={s.cellTitle} numberOfLines={1}>{item.title}</Text>
                   <Text style={s.cellPrice}>${item.price}</Text>
@@ -195,6 +250,7 @@ export default function UserProfileScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
+  loadingWrap: { alignItems: 'center', justifyContent: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 8 },
   iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   username: { fontSize: 16, fontWeight: '700', color: '#fff' },
@@ -229,6 +285,7 @@ const s = StyleSheet.create({
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, padding: 2 },
   cell: { width: CELL, height: CELL },
+  cellImage: { position: 'absolute', top: 0, left: 0, width: CELL, height: CELL },
   cellFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 7, backgroundColor: 'rgba(0,0,0,0.5)' },
   cellTitle: { fontSize: 10, color: '#fff', fontWeight: '600' },
   cellPrice: { fontSize: 11, color: '#fff', fontWeight: '800' },
