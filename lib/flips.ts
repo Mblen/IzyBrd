@@ -95,6 +95,21 @@ export async function getMyFlips(): Promise<DbFlip[]> {
   return (data ?? []) as DbFlip[];
 }
 
+// Active flips whose title matches the query (case-insensitive).
+export async function searchFlips(query: string): Promise<DbFlip[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const { data, error } = await supabase
+    .from('flips')
+    .select('*')
+    .eq('status', 'active')
+    .ilike('title', `%${q}%`)
+    .order('created_at', { ascending: false })
+    .limit(30);
+  if (error) return [];
+  return (data ?? []) as DbFlip[];
+}
+
 // Active flips for a given seller (their public closet).
 export async function getFlipsBySeller(sellerId: string): Promise<DbFlip[]> {
   const { data, error } = await supabase

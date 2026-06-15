@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
   StyleSheet, TextInput, Dimensions, Image,
@@ -6,6 +6,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { searchFlips } from '../lib/flips';
+import { isSupabaseConfigured } from '../lib/supabase';
+
+type ResultItem = { id: string; title: string; price: number; color: string; image: string };
 
 const { width: W } = Dimensions.get('window');
 
@@ -27,10 +31,27 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [recent, setRecent] = useState(RECENT);
 
-  const filtered = RESULTS.filter(r =>
-    query.length > 0 && r.title.toLowerCase().includes(query.toLowerCase())
-  );
-  const showResults = query.length > 0;
+  const [filtered, setFiltered] = useState<ResultItem[]>([]);
+  const showResults = query.trim().length > 0;
+
+  // Search real listings (debounced); fall back to the seed results offline.
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) { setFiltered([]); return; }
+    if (!isSupabaseConfigured) {
+      setFiltered(RESULTS.filter(r => r.title.toLowerCase().includes(q.toLowerCase())));
+      return;
+    }
+    let active = true;
+    const t = setTimeout(() => {
+      searchFlips(q)
+        .then(flips => {
+          if (active) setFiltered(flips.map(f => ({ id: f.id, title: f.title, price: f.price, color: '#1a1a1a', image: f.image_url ?? '' })));
+        })
+        .catch(() => { if (active) setFiltered([]); });
+    }, 250);
+    return () => { active = false; clearTimeout(t); };
+  }, [query]);
 
   const pickSuggestion = (term: string) => {
     setQuery(term);
