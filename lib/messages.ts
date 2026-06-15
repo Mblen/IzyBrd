@@ -46,6 +46,32 @@ export async function getThread(recipientId: string): Promise<ChatMessage[]> {
   }));
 }
 
+// Live-subscribe to new incoming messages from `recipientId` to the signed-in
+// user. Returns a cleanup function. Requires Realtime enabled on the messages
+// table (alter publication supabase_realtime add table public.messages).
+export async function subscribeToThread(
+  recipientId: string,
+  onIncoming: (m: ChatMessage) => void
+): Promise<() => void> {
+  const { data: auth } = await supabase.auth.getUser();
+  const me = auth.user?.id;
+  if (!me) return () => {};
+  const channel = supabase
+    .channel(`thread-${me}-${recipientId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${me}` },
+      payload => {
+        const m = payload.new as { id: string; sender_id: string; body: string };
+        if (m.sender_id === recipientId) {
+          onIncoming({ id: m.id, from: 'them', text: m.body, time: '' });
+        }
+      }
+    )
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}
+
 export async function sendMessage(recipientId: string, body: string): Promise<void> {
   const { data: auth } = await supabase.auth.getUser();
   const me = auth.user?.id;

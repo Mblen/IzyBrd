@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getRecipientId, getThread, sendMessage } from '../../lib/messages';
+import { getRecipientId, getThread, sendMessage, subscribeToThread } from '../../lib/messages';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 type Msg = {
@@ -97,6 +97,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     let active = true;
+    let cleanup: (() => void) | undefined;
     (async () => {
       if (isSupabaseConfigured) {
         const rid = await getRecipientId(name);
@@ -105,6 +106,11 @@ export default function ChatScreen() {
           setRecipientId(rid);
           const thread = await getThread(rid);
           if (active) setMessages(thread);
+          // Live updates: append incoming messages as they arrive, de-duped
+          cleanup = await subscribeToThread(rid, incoming => {
+            setMessages(prev => (prev.some(m => m.id === incoming.id) ? prev : [...prev, incoming]));
+          });
+          if (!active) cleanup?.();
           return;
         }
       }
@@ -114,7 +120,7 @@ export default function ChatScreen() {
         setMessages(SEEDS[name] ?? []);
       }
     })();
-    return () => { active = false; };
+    return () => { active = false; cleanup?.(); };
   }, [name]);
 
   const send = async () => {

@@ -86,6 +86,9 @@ create table if not exists public.messages (
 );
 create index if not exists messages_pair_idx on public.messages (sender_id, recipient_id);
 
+-- Enable Realtime so the chat updates live as messages arrive
+alter publication supabase_realtime add table public.messages;
+
 -- ---------------------------------------------------------------------------
 -- Auto-create a profile row whenever a new auth user signs up
 -- ---------------------------------------------------------------------------
