@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useSyncExternalStore } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useSyncExternalStore } from 'react';
 import {
   View,
   Text,
@@ -265,6 +265,7 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState(0); // default: Following
   const [dbFlips, setDbFlips] = useState<FeedItem[]>([]);
+  const listRef = useRef<FlatList>(null);
 
   // Load real flips from everyone; refetch on focus so a flip you just posted
   // appears at the top. Mock flips stay beneath so the feed is never empty.
@@ -300,6 +301,12 @@ export default function HomeScreen() {
     }, [])
   );
 
+  // When the newest flip changes (e.g. you just posted one), snap to the top
+  // so it's the first card shown. Runs after the new data has rendered.
+  useEffect(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [dbFlips[0]?.id]);
+
   const feedData: FeedItem[] = [...dbFlips, ...FLIPS];
 
   return (
@@ -308,6 +315,7 @@ export default function HomeScreen() {
 
       {/* Full-screen vertical feed */}
       <FlatList
+        ref={listRef}
         data={feedData}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <FlipCard item={item} />}
