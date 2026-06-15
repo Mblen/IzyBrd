@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { getRecipientId, getThread, sendMessage } from '../../lib/messages';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 type Msg = {
   id: string;
@@ -87,15 +89,47 @@ function OfferCard({
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const name = id ?? 'chat';
-  const [messages, setMessages] = useState<Msg[]>(SEEDS[name] ?? []);
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState('');
+  // recipientId: undefined = resolving, null = seed/mock thread, string = real user
+  const [recipientId, setRecipientId] = useState<string | null | undefined>(undefined);
   const listRef = useRef<FlatList>(null);
 
-  const send = () => {
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (isSupabaseConfigured) {
+        const rid = await getRecipientId(name);
+        if (!active) return;
+        if (rid) {
+          setRecipientId(rid);
+          const thread = await getThread(rid);
+          if (active) setMessages(thread);
+          return;
+        }
+      }
+      // Seed conversation fallback (mock inbox users)
+      if (active) {
+        setRecipientId(null);
+        setMessages(SEEDS[name] ?? []);
+      }
+    })();
+    return () => { active = false; };
+  }, [name]);
+
+  const send = async () => {
     const text = draft.trim();
     if (!text) return;
-    setMessages(prev => [...prev, { id: `m${Date.now()}`, from: 'me', text, time: 'now' }]);
     setDraft('');
+    // Optimistically show the message right away
+    setMessages(prev => [...prev, { id: `tmp-${Date.now()}`, from: 'me', text, time: 'now' }]);
+    if (recipientId) {
+      try {
+        await sendMessage(recipientId, text);
+      } catch {
+        /* keep the optimistic bubble; a refetch on reopen will reconcile */
+      }
+    }
   };
 
   const respondToOffer = (msgId: string, status: 'accepted' | 'declined') => {

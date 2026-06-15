@@ -140,7 +140,11 @@ export default function UserProfileScreen() {
               {following ? 'Following' : 'Follow'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.msgBtn} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={s.msgBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push(`/chat/${(id ?? '').replace('@', '')}` as any)}
+          >
             <Text style={s.msgTxt}>Message</Text>
           </TouchableOpacity>
         </View>
