@@ -8,6 +8,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getProfileByUsername } from '../../lib/profile';
 import { getFlipsBySeller } from '../../lib/flips';
+import { getFollowCounts, isFollowing, follow, unfollow } from '../../lib/follows';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 type SellerView = {
@@ -81,6 +82,9 @@ export default function UserProfileScreen() {
   const [loading, setLoading] = useState(!mockSeller && isSupabaseConfigured && !!username);
   const [following, setFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [sellerId, setSellerId] = useState<string | null>(null);
+  const [counts, setCounts] = useState<{ followers: number; following: number } | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
 
   useEffect(() => {
     if (mockSeller || !username || !isSupabaseConfigured) return;
@@ -89,15 +93,22 @@ export default function UserProfileScreen() {
       const profile = await getProfileByUsername(username);
       if (!active) return;
       if (profile) {
-        const flips = await getFlipsBySeller(profile.id);
+        setSellerId(profile.id);
+        const [flips, followCounts, amFollowing] = await Promise.all([
+          getFlipsBySeller(profile.id),
+          getFollowCounts(profile.id),
+          isFollowing(profile.id),
+        ]);
         if (!active) return;
+        setCounts(followCounts);
+        setFollowing(amFollowing);
         setDbSeller({
           handle: `@${profile.username ?? username}`,
           name: profile.full_name || profile.username || username,
           rating: 0,
           reviews: 0,
-          followers: 0,
-          following: 0,
+          followers: followCounts.followers,
+          following: followCounts.following,
           college: profile.college || '',
           city: profile.city || '',
           bio: profile.bio || '',
@@ -111,6 +122,27 @@ export default function UserProfileScreen() {
 
   // Real seller when found; otherwise the seeded mock (or a safe default)
   const seller: SellerView = mockSeller ?? dbSeller ?? SELLERS['christybb'];
+  const followerCount = counts ? counts.followers : seller.followers;
+
+  const toggleFollow = async () => {
+    // Seeded mock sellers keep the simple local toggle
+    if (!sellerId) { setFollowing(v => !v); return; }
+    if (followBusy) return;
+    const next = !following;
+    setFollowing(next);
+    setCounts(c => c && { ...c, followers: Math.max(0, c.followers + (next ? 1 : -1)) });
+    setFollowBusy(true);
+    try {
+      if (next) await follow(sellerId);
+      else await unfollow(sellerId);
+    } catch {
+      // revert on failure
+      setFollowing(!next);
+      setCounts(c => c && { ...c, followers: Math.max(0, c.followers + (next ? -1 : 1)) });
+    } finally {
+      setFollowBusy(false);
+    }
+  };
 
   const data = activeTab === 0 ? seller.flips : [];
 
@@ -144,7 +176,7 @@ export default function UserProfileScreen() {
             </Text>
           </View>
           <View style={s.statBlock}>
-            <Text style={s.statNum}>{seller.followers}</Text>
+            <Text style={s.statNum}>{followerCount}</Text>
             <Text style={s.statLabel}>Followers</Text>
           </View>
           <View style={s.statBlock}>
@@ -185,7 +217,7 @@ export default function UserProfileScreen() {
         <View style={s.actionsRow}>
           <TouchableOpacity
             style={[s.followBtn, following && s.followBtnOn]}
-            onPress={() => setFollowing(v => !v)}
+            onPress={toggleFollow}
             activeOpacity={0.85}
           >
             <Text style={[s.followTxt, following && s.followTxtOn]}>

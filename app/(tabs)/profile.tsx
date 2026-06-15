@@ -8,6 +8,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getMyFlips, DbFlip } from '../../lib/flips';
 import { getMyProfile, signOut, Profile } from '../../lib/profile';
+import { getFollowCounts } from '../../lib/follows';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 function initials(name: string): string {
@@ -42,6 +43,7 @@ export default function ProfileScreen() {
   // a flip just posted from the Sell form shows up immediately.
   const [myFlips, setMyFlips] = useState<DbFlip[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [counts, setCounts] = useState<{ followers: number; following: number } | null>(null);
   useFocusEffect(
     useCallback(() => {
       if (!isSupabaseConfigured) return;
@@ -50,7 +52,11 @@ export default function ProfileScreen() {
         .then(f => { if (active) setMyFlips(f); })
         .catch(() => { /* leave the mock seed data in place on error */ });
       getMyProfile()
-        .then(p => { if (active) setProfile(p); })
+        .then(p => {
+          if (!active) return;
+          setProfile(p);
+          if (p) getFollowCounts(p.id).then(c => { if (active) setCounts(c); }).catch(() => {});
+        })
         .catch(() => {});
       return () => { active = false; };
     }, [])
@@ -100,11 +106,11 @@ export default function ProfileScreen() {
             </View>
           </View>
           <View style={s.statBlock}>
-            <Text style={s.statNum}>247</Text>
+            <Text style={s.statNum}>{counts ? counts.followers : '—'}</Text>
             <Text style={s.statLabel}>Followers</Text>
           </View>
           <View style={s.statBlock}>
-            <Text style={s.statNum}>89</Text>
+            <Text style={s.statNum}>{counts ? counts.following : '—'}</Text>
             <Text style={s.statLabel}>Following</Text>
           </View>
           <View style={s.statBlock}>

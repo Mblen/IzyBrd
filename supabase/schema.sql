@@ -224,3 +224,29 @@ drop policy if exists "authenticated users can upload flip photos" on storage.ob
 create policy "authenticated users can upload flip photos"
   on storage.objects for insert to authenticated
   with check (bucket_id = 'flip-photos');
+
+-- ---------------------------------------------------------------------------
+-- follows: who follows whom (one row per follower -> following pair)
+-- ---------------------------------------------------------------------------
+create table if not exists public.follows (
+  follower_id   uuid not null references public.profiles (id) on delete cascade,
+  following_id  uuid not null references public.profiles (id) on delete cascade,
+  created_at    timestamptz not null default now(),
+  primary key (follower_id, following_id)
+);
+
+alter table public.follows enable row level security;
+
+-- Follow relationships are public (so anyone can see counts); you can only
+-- create/remove your own follows.
+drop policy if exists "follows are viewable by everyone" on public.follows;
+create policy "follows are viewable by everyone"
+  on public.follows for select using (true);
+
+drop policy if exists "users can follow" on public.follows;
+create policy "users can follow"
+  on public.follows for insert with check (auth.uid() = follower_id);
+
+drop policy if exists "users can unfollow" on public.follows;
+create policy "users can unfollow"
+  on public.follows for delete using (auth.uid() = follower_id);
