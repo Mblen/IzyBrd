@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { CategoryIcon, CATEGORY_TYPE } from '../../components/CategoryIcon';
 
 const { width: W } = Dimensions.get('window');
 
@@ -107,7 +108,9 @@ export default function DiscoverScreen() {
           <View style={s.catList}>
             {CATEGORIES.map((c, i) => (
               <TouchableOpacity key={c.label} style={[s.catRow, i < CATEGORIES.length - 1 && s.catRowBorder]} activeOpacity={0.75}>
-                <Text style={s.catEmoji}>{c.emoji}</Text>
+                <View style={s.catIcon}>
+                  <CategoryIcon type={CATEGORY_TYPE[c.label]} size={26} color="#fff" />
+                </View>
                 <Text style={s.catLabel}>{c.label}</Text>
                 <Text style={s.catArrow}>›</Text>
               </TouchableOpacity>
@@ -195,6 +198,7 @@ const s = StyleSheet.create({
   catRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, gap: 14 },
   catRowBorder: { borderBottomWidth: 1, borderBottomColor: '#1a1a1a' },
   catEmoji: { fontSize: 18, width: 28, textAlign: 'center' },
+  catIcon: { width: 28, alignItems: 'center' },
   catLabel: { flex: 1, fontSize: 16, color: '#fff', fontWeight: '500', letterSpacing: 0.1 },
   catArrow: { fontSize: 22, color: '#444' },
 

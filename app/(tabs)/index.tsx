@@ -83,7 +83,7 @@ const FLIPS = [
 ];
 
 // For You sits on the right and is the default tab (TikTok-style)
-const FEED_TABS = ['Following', 'Local', 'Collections', 'For You'];
+const FEED_TABS = ['Following', 'Local', 'For You'];
 const FOLLOWING_TAB = 0;
 const FOR_YOU_TAB = FEED_TABS.length - 1;
 
