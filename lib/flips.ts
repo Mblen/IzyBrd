@@ -4,6 +4,10 @@
 
 import { supabase } from './supabase';
 
+// Shown when a flip has no photo, so a card never renders as a black box.
+export const DEFAULT_FLIP_IMAGE =
+  'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/white-crew.jpg';
+
 export type DbFlip = {
   id: string;
   seller_id: string;

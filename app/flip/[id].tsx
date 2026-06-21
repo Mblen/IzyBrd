@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { addOffer } from '../../lib/offers';
-import { getFlip } from '../../lib/flips';
+import { getFlip, DEFAULT_FLIP_IMAGE } from '../../lib/flips';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
 
@@ -164,7 +164,7 @@ export default function FlipDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
         {/* Hero image with back + heart overlays */}
         <View style={s.imageWrap}>
-          <Image source={{ uri: flip.image }} style={s.image} resizeMode="cover" />
+          <Image source={{ uri: flip.image || DEFAULT_FLIP_IMAGE }} style={s.image} resizeMode="cover" />
           <SafeAreaView style={s.imageOverlay} edges={['top']} pointerEvents="box-none">
             <TouchableOpacity style={s.overlayBtn} onPress={() => router.back()}>
               <Ionicons name="chevron-back" size={22} color="#000" />

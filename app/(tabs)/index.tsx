@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
-import { getFeedFlips, getFollowingFeedFlips } from '../../lib/flips';
+import { getFeedFlips, getFollowingFeedFlips, DEFAULT_FLIP_IMAGE } from '../../lib/flips';
 import { isRealFlipId } from '../../lib/ids';
 import { getLikeCount, hasLiked, like, unlike, subscribeLikes, hasSaved, save, unsave } from '../../lib/engagement';
 import { isSupabaseConfigured } from '../../lib/supabase';
@@ -187,7 +187,7 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
     <View style={[styles.card, { backgroundColor: item.imageBg }]}>
       {/* Background image */}
       <Image
-        source={{ uri: item.image }}
+        source={{ uri: item.image || DEFAULT_FLIP_IMAGE }}
         style={styles.cardImage}
         resizeMode="cover"
       />
