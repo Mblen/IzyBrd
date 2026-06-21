@@ -34,7 +34,7 @@ const FLIPS = [
     story: `Got this at the Brandy Melville on Melrose. Worn maybe twice to class. It deserves someone who actually lives in LA.`,
     price: 38, city: 'Malibu, CA', likes: 47, comments: 6,
     imageBg: '#2d1a0e',
-    image: 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/art-collection.jpg',
   },
   {
     id: '2',
@@ -45,7 +45,7 @@ const FLIPS = [
     story: `Vintage wash, so soft it feels illegal. Found it at the back of my closet after two years. Time to let it go.`,
     price: 32, city: 'Santa Monica, CA', likes: 31, comments: 3,
     imageBg: '#1e1a2d',
-    image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/white-crew.jpg',
   },
   {
     id: '3',
@@ -56,7 +56,7 @@ const FLIPS = [
     story: `Still has the tag. Bought it for a trip that never happened. Letting it find its person.`,
     price: 54, city: 'Austin, TX', likes: 89, comments: 14,
     imageBg: '#1a2410',
-    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/star-zip.jpg',
   },
   {
     id: '4',
@@ -67,7 +67,7 @@ const FLIPS = [
     story: `The coziest thing I own. But my style shifted and she deserves more wear than I can give.`,
     price: 29, city: 'Nashville, TN', likes: 118, comments: 9,
     imageBg: '#2a1f14',
-    image: 'https://images.unsplash.com/photo-1629421882192-a9d3ca8e1ab3?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/beige-hoodie.jpg',
   },
   {
     id: '5',
@@ -78,7 +78,7 @@ const FLIPS = [
     story: `Thrifted this in Portland. The kind of piece that makes strangers stop you on the street.`,
     price: 46, city: 'Portland, OR', likes: 203, comments: 28,
     imageBg: '#1a2220',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/rust-hoodie.jpg',
   },
 ];
 

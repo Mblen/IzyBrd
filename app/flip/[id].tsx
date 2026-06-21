@@ -39,7 +39,7 @@ const FLIPS: Record<string, FlipView> = {
     title: 'Christy Hoodie',
     story: `Got this at the Brandy Melville on Melrose. Worn maybe twice to class. It deserves someone who actually lives in LA.`,
     price: 38, city: 'Malibu, CA',
-    image: 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/art-collection.jpg',
   },
   '2': {
     seller: '@haileyflipper', rating: 4.9, reviews: 8,
@@ -47,7 +47,7 @@ const FLIPS: Record<string, FlipView> = {
     title: 'Chase Crew',
     story: `Vintage wash, so soft it feels illegal. Found it at the back of my closet after two years. Time to let it go.`,
     price: 32, city: 'Santa Monica, CA',
-    image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/white-crew.jpg',
   },
   '3': {
     seller: '@themiaedits', rating: 4.8, reviews: 22,
@@ -55,7 +55,7 @@ const FLIPS: Record<string, FlipView> = {
     title: 'Luke Zip-Up',
     story: `Still has the tag. Bought it for a trip that never happened. Letting it find its person.`,
     price: 54, city: 'Austin, TX',
-    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/star-zip.jpg',
   },
   '4': {
     seller: '@sydneyarchive', rating: 4.7, reviews: 5,
@@ -63,7 +63,7 @@ const FLIPS: Record<string, FlipView> = {
     title: 'Hailey Crop Crew',
     story: `The coziest thing I own. But my style shifted and she deserves more wear than I can give.`,
     price: 29, city: 'Nashville, TN',
-    image: 'https://images.unsplash.com/photo-1629421882192-a9d3ca8e1ab3?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/beige-hoodie.jpg',
   },
   '5': {
     seller: '@remivintageco', rating: 4.9, reviews: 34,
@@ -71,7 +71,7 @@ const FLIPS: Record<string, FlipView> = {
     title: 'Remi Mock Neck',
     story: `Thrifted this in Portland. The kind of piece that makes strangers stop you on the street.`,
     price: 46, city: 'Portland, OR',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80',
+    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/rust-hoodie.jpg',
   },
 };
 

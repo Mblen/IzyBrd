@@ -22,11 +22,11 @@ type CheckoutFlip = { title: string; seller: string; price: number; condition: s
 
 // Seeded demo flips (the feed's '1'..'5'); real flips load from the database.
 const FLIPS: Record<string, CheckoutFlip> = {
-  '1': { title: 'Christy Hoodie', seller: '@christybb', price: 38, condition: 'Like New Without Tags', size: 'One Size', image: 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80' },
-  '2': { title: 'Chase Crew', seller: '@haileyflipper', price: 32, condition: 'Gently Used', size: 'One Size', image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80' },
-  '3': { title: 'Luke Zip-Up', seller: '@themiaedits', price: 54, condition: 'New With Tags', size: 'One Size', image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=80' },
-  '4': { title: 'Hailey Crop Crew', seller: '@sydneyarchive', price: 29, condition: 'Gently Used', size: 'One Size', image: 'https://images.unsplash.com/photo-1629421882192-a9d3ca8e1ab3?w=800&q=80' },
-  '5': { title: 'Remi Mock Neck', seller: '@remivintageco', price: 46, condition: 'Vintage', size: 'One Size', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80' },
+  '1': { title: 'Christy Hoodie', seller: '@christybb', price: 38, condition: 'Like New Without Tags', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/art-collection.jpg' },
+  '2': { title: 'Chase Crew', seller: '@haileyflipper', price: 32, condition: 'Gently Used', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/white-crew.jpg' },
+  '3': { title: 'Luke Zip-Up', seller: '@themiaedits', price: 54, condition: 'New With Tags', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/star-zip.jpg' },
+  '4': { title: 'Hailey Crop Crew', seller: '@sydneyarchive', price: 29, condition: 'Gently Used', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/beige-hoodie.jpg' },
+  '5': { title: 'Remi Mock Neck', seller: '@remivintageco', price: 46, condition: 'Vintage', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/rust-hoodie.jpg' },
 };
 
 export default function CheckoutScreen() {
