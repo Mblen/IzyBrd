@@ -250,3 +250,52 @@ create policy "users can follow"
 drop policy if exists "users can unfollow" on public.follows;
 create policy "users can unfollow"
   on public.follows for delete using (auth.uid() = follower_id);
+
+-- ---------------------------------------------------------------------------
+-- likes: who liked which flip (public counts)
+-- ---------------------------------------------------------------------------
+create table if not exists public.likes (
+  user_id     uuid not null references public.profiles (id) on delete cascade,
+  flip_id     uuid not null references public.flips (id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (user_id, flip_id)
+);
+alter table public.likes enable row level security;
+
+drop policy if exists "likes are viewable by everyone" on public.likes;
+create policy "likes are viewable by everyone"
+  on public.likes for select using (true);
+
+drop policy if exists "users can like" on public.likes;
+create policy "users can like"
+  on public.likes for insert with check (auth.uid() = user_id);
+
+drop policy if exists "users can unlike" on public.likes;
+create policy "users can unlike"
+  on public.likes for delete using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------------
+-- saves: a user's private saved flips (only the owner can see them)
+-- ---------------------------------------------------------------------------
+create table if not exists public.saves (
+  user_id     uuid not null references public.profiles (id) on delete cascade,
+  flip_id     uuid not null references public.flips (id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (user_id, flip_id)
+);
+alter table public.saves enable row level security;
+
+drop policy if exists "users can read their own saves" on public.saves;
+create policy "users can read their own saves"
+  on public.saves for select using (auth.uid() = user_id);
+
+drop policy if exists "users can save" on public.saves;
+create policy "users can save"
+  on public.saves for insert with check (auth.uid() = user_id);
+
+drop policy if exists "users can unsave" on public.saves;
+create policy "users can unsave"
+  on public.saves for delete using (auth.uid() = user_id);
+
+-- Live like counts
+alter publication supabase_realtime add table public.likes;

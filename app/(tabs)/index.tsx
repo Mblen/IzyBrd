@@ -16,7 +16,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
-import { getFeedFlips } from '../../lib/flips';
+import { getFeedFlips, getFollowingFeedFlips } from '../../lib/flips';
+import { isRealFlipId } from '../../lib/ids';
+import { getLikeCount, hasLiked, like, unlike, subscribeLikes, hasSaved, save, unsave } from '../../lib/engagement';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -80,7 +82,10 @@ const FLIPS = [
   },
 ];
 
-const FEED_TABS = ['Following', 'Local', 'Collections'];
+// For You sits on the right and is the default tab (TikTok-style)
+const FEED_TABS = ['Following', 'Local', 'Collections', 'For You'];
+const FOLLOWING_TAB = 0;
+const FOR_YOU_TAB = FEED_TABS.length - 1;
 
 type FeedItem = typeof FLIPS[number];
 
@@ -132,17 +137,46 @@ function ActionBtn({
 
 // --- Single Flip Card -----------------------------------------------------------
 function FlipCard({ item }: { item: typeof FLIPS[0] }) {
+  const isReal = isRealFlipId(item.id);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [likes, setLikes] = useState(item.likes);
   const sold = useSyncExternalStore(subscribeLocalOrders, () => isLocalSold(item.id), () => isLocalSold(item.id));
 
+  // Real flips: load like count + my like/save state, and keep the count live
+  useEffect(() => {
+    if (!isReal) return;
+    let active = true;
+    const refreshCount = () => { getLikeCount(item.id).then(c => { if (active) setLikes(c); }).catch(() => {}); };
+    refreshCount();
+    hasLiked(item.id).then(v => { if (active) setLiked(v); }).catch(() => {});
+    hasSaved(item.id).then(v => { if (active) setSaved(v); }).catch(() => {});
+    const unsub = subscribeLikes(item.id, refreshCount);
+    return () => { active = false; unsub(); };
+  }, [item.id]);
+
   const toggleLike = () => {
-    setLiked((v) => {
-      setLikes((l) => (v ? l - 1 : l + 1));
-      return !v;
+    if (!isReal) {
+      setLiked(v => { setLikes(l => (v ? l - 1 : l + 1)); return !v; });
+      return;
+    }
+    const next = !liked;
+    setLiked(next);
+    setLikes(l => Math.max(0, l + (next ? 1 : -1)));
+    (next ? like(item.id) : unlike(item.id)).catch(() => {
+      setLiked(!next);
+      setLikes(l => Math.max(0, l + (next ? -1 : 1)));
     });
   };
+
+  const toggleSave = () => {
+    if (!isReal) { setSaved(v => !v); return; }
+    const next = !saved;
+    setSaved(next);
+    (next ? save(item.id) : unsave(item.id)).catch(() => setSaved(!next));
+  };
+
+  const messageSeller = () => router.push(`/chat/${item.seller.replace('@', '')}` as any);
 
   const filledStars = Math.round(item.rating);
   const stars = Array.from({ length: 5 }, (_, i) =>
@@ -192,9 +226,9 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
         <View style={{ height: 16 }} />
 
         <ActionBtn icon="heart-outline" iconActive="heart" count={likes} onPress={toggleLike} active={liked} />
-        <ActionBtn icon="chatbubble-outline" count={item.comments} onPress={() => {}} />
+        <ActionBtn icon="chatbubble-outline" onPress={messageSeller} />
         <ActionBtn icon="arrow-redo-outline" onPress={() => {}} />
-        <ActionBtn icon="bookmark-outline" iconActive="bookmark" onPress={() => setSaved((v) => !v)} active={saved} />
+        <ActionBtn icon="bookmark-outline" iconActive="bookmark" onPress={toggleSave} active={saved} />
       </View>
 
       {/* Bottom info overlay */}
@@ -263,17 +297,19 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
 
 // --- Home Screen ----------------------------------------------------------------
 export default function HomeScreen() {
-  const [activeTab, setActiveTab] = useState(0); // default: Following
+  const [activeTab, setActiveTab] = useState(FOR_YOU_TAB); // default: For You (rightmost)
   const [dbFlips, setDbFlips] = useState<FeedItem[]>([]);
   const listRef = useRef<FlatList>(null);
 
-  // Load real flips from everyone; refetch on focus so a flip you just posted
-  // appears at the top. Mock flips stay beneath so the feed is never empty.
+  // "For You" shows everyone's flips; "Following" shows only people you follow.
+  // Refetches on focus and when the tab changes; a just-posted flip appears at
+  // the top. Mock flips stay beneath the For You feed so it's never empty.
   useFocusEffect(
     useCallback(() => {
       if (!isSupabaseConfigured) return;
       let active = true;
-      getFeedFlips()
+      const load = activeTab === FOLLOWING_TAB ? getFollowingFeedFlips : getFeedFlips;
+      load()
         .then(flips => {
           if (!active) return;
           setDbFlips(
@@ -298,7 +334,7 @@ export default function HomeScreen() {
         })
         .catch(() => { /* keep the mock feed on error */ });
       return () => { active = false; };
-    }, [])
+    }, [activeTab])
   );
 
   // When the newest flip changes (e.g. you just posted one), snap to the top
@@ -307,7 +343,10 @@ export default function HomeScreen() {
     listRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [dbFlips[0]?.id]);
 
-  const feedData: FeedItem[] = [...dbFlips, ...FLIPS];
+  // The Following feed shows only people you follow (no mock filler);
+  // every other tab appends the seed flips so it's never empty.
+  const feedData: FeedItem[] =
+    activeTab === FOLLOWING_TAB ? dbFlips : [...dbFlips, ...FLIPS];
 
   return (
     <View style={styles.container}>
@@ -324,6 +363,15 @@ export default function HomeScreen() {
         snapToInterval={SCREEN_HEIGHT}
         decelerationRate="fast"
         snapToAlignment="start"
+        ListEmptyComponent={
+          <View style={styles.emptyFeed}>
+            <Ionicons name="people-outline" size={40} color="rgba(255,255,255,0.4)" />
+            <Text style={styles.emptyFeedTitle}>Nothing here yet</Text>
+            <Text style={styles.emptyFeedText}>
+              Follow sellers to see their flips in your Following feed.
+            </Text>
+          </View>
+        }
       />
 
       {/* Feed tabs — pinned at top, overlaid on feed */}
@@ -353,6 +401,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  emptyFeed: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 48,
+    gap: 12,
+  },
+  emptyFeedTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  emptyFeedText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 
   // Card

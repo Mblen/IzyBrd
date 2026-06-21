@@ -95,6 +95,27 @@ export async function getMyFlips(): Promise<DbFlip[]> {
   return (data ?? []) as DbFlip[];
 }
 
+// Active flips from sellers the signed-in user follows (the "Following" feed).
+export async function getFollowingFeedFlips(limit = 30): Promise<DbFlipWithSeller[]> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return [];
+  const { data: f } = await supabase.from('follows').select('following_id').eq('follower_id', auth.user.id);
+  const ids = (f ?? []).map((r: any) => r.following_id);
+  if (!ids.length) return [];
+  const { data, error } = await supabase
+    .from('flips')
+    .select('*, profiles:seller_id(username)')
+    .eq('status', 'active')
+    .in('seller_id', ids)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return (data ?? []).map(row => {
+    const { profiles, ...flip } = row as DbFlip & { profiles: { username: string | null } | null };
+    return { ...flip, seller_username: profiles?.username ?? null };
+  });
+}
+
 // Active flips whose title matches the query (case-insensitive).
 export async function searchFlips(query: string): Promise<DbFlip[]> {
   const q = query.trim();
