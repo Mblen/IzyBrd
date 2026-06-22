@@ -138,7 +138,7 @@ export default function FlipDetailScreen() {
   if (loading) {
     return (
       <View style={[s.container, s.loadingWrap]}>
-        <ActivityIndicator color="#000" />
+        <ActivityIndicator color="#fff" />
       </View>
     );
   }
@@ -194,7 +194,7 @@ export default function FlipDetailScreen() {
               <View>
                 <Text style={s.sellerName}>{flip.seller}</Text>
                 <View style={s.ratingRow}>
-                  <Ionicons name="star" size={11} color="#000" />
+                  <Ionicons name="star" size={11} color="#fff" />
                   <Text style={s.ratingText}>
                     {flip.rating.toFixed(1)} · {flip.reviews} reviews
                   </Text>
@@ -268,7 +268,7 @@ export default function FlipDetailScreen() {
           <View style={s.sheet}>
             {offerSent ? (
               <View style={s.sentWrap}>
-                <Ionicons name="checkmark-circle" size={48} color="#000" />
+                <Ionicons name="checkmark-circle" size={48} color="#fff" />
                 <Text style={s.sentTitle}>Offer sent</Text>
                 <Text style={s.sentSub}>{flip.seller} has 24 hours to respond</Text>
               </View>
@@ -331,11 +331,11 @@ export default function FlipDetailScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
   loadingWrap: { alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingBottom: 120 },
 
-  imageWrap: { width: SCREEN_WIDTH, height: SCREEN_WIDTH * 1.15, backgroundColor: '#f2f2f2' },
+  imageWrap: { width: SCREEN_WIDTH, height: SCREEN_WIDTH * 1.15, backgroundColor: '#161616' },
   image: { width: '100%', height: '100%' },
   imageOverlay: {
     position: 'absolute',
@@ -358,24 +358,24 @@ const s = StyleSheet.create({
 
   body: { paddingHorizontal: 18, paddingTop: 18, gap: 8 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-  title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.4, color: '#000', flex: 1 },
-  price: { fontSize: 24, fontWeight: '800', color: '#000' },
+  title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.4, color: '#fff', flex: 1 },
+  price: { fontSize: 24, fontWeight: '800', color: '#fff' },
 
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   chip: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#333',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  chipText: { fontSize: 12, fontWeight: '600', color: '#333' },
+  chipText: { fontSize: 12, fontWeight: '600', color: '#ccc' },
 
   sectionHeader: {
     fontFamily: 'Georgia',
     fontStyle: 'italic',
     fontSize: 18,
-    color: '#000',
+    color: '#fff',
     marginTop: 18,
     marginBottom: 4,
   },
@@ -384,7 +384,7 @@ const s = StyleSheet.create({
     fontStyle: 'italic',
     fontSize: 15,
     lineHeight: 23,
-    color: '#444',
+    color: 'rgba(255,255,255,0.7)',
   },
 
   sellerRow: {
@@ -395,50 +395,50 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: '#1e1e1e',
   },
   sellerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  sellerName: { fontSize: 14, fontWeight: '700', color: '#000' },
+  avatarInitial: { color: '#000', fontSize: 17, fontWeight: '700' },
+  sellerName: { fontSize: 14, fontWeight: '700', color: '#fff' },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
-  ratingText: { fontSize: 11, color: '#777' },
+  ratingText: { fontSize: 11, color: '#999' },
   followBtn: {
     borderWidth: 1.5,
-    borderColor: '#000',
+    borderColor: '#fff',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 7,
   },
-  followBtnOn: { backgroundColor: '#000' },
-  followText: { fontSize: 13, fontWeight: '700', color: '#000' },
-  followTextOn: { color: '#fff' },
+  followBtnOn: { backgroundColor: '#fff' },
+  followText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  followTextOn: { color: '#000' },
 
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 9,
     borderBottomWidth: 1,
-    borderColor: '#f5f5f5',
+    borderColor: '#1a1a1a',
   },
   detailLabel: { fontSize: 13, color: '#888' },
-  detailValue: { fontSize: 13, fontWeight: '600', color: '#000' },
+  detailValue: { fontSize: 13, fontWeight: '600', color: '#fff' },
 
   bottomBarWrap: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: '#0a0a0a',
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: '#1e1e1e',
   },
   bottomBar: {
     flexDirection: 'row',
@@ -449,27 +449,27 @@ const s = StyleSheet.create({
   offerBtn: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: '#000',
+    borderColor: '#fff',
     borderRadius: 28,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  offerText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  offerText: { fontSize: 14, fontWeight: '700', color: '#fff' },
   buyBtn: {
     flex: 1.4,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     borderRadius: 28,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  buyText: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
+  buyText: { fontSize: 14, fontWeight: '800', color: '#000', letterSpacing: 0.2 },
   soldBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#1a1a1a',
     borderRadius: 28,
     paddingVertical: 14,
   },
@@ -479,38 +479,38 @@ const s = StyleSheet.create({
   modalBackdrop: { flex: 1, justifyContent: 'flex-end' },
   modalDim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet: {
-    backgroundColor: '#fff',
+    backgroundColor: '#161616',
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 36,
   },
-  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#ddd', alignSelf: 'center', marginBottom: 14 },
-  sheetTitle: { fontSize: 20, fontWeight: '800', color: '#000' },
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#333', alignSelf: 'center', marginBottom: 14 },
+  sheetTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
   sheetSub: { fontSize: 13, color: '#888', marginTop: 3, marginBottom: 16 },
   quickRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  quickChip: { flex: 1, borderWidth: 1.5, borderColor: '#ddd', borderRadius: 22, paddingVertical: 11, alignItems: 'center' },
-  quickChipOn: { backgroundColor: '#000', borderColor: '#000' },
-  quickChipTxt: { fontSize: 15, fontWeight: '700', color: '#333' },
-  quickChipTxtOn: { color: '#fff' },
+  quickChip: { flex: 1, borderWidth: 1.5, borderColor: '#333', borderRadius: 22, paddingVertical: 11, alignItems: 'center' },
+  quickChipOn: { backgroundColor: '#fff', borderColor: '#fff' },
+  quickChipTxt: { fontSize: 15, fontWeight: '700', color: '#ccc' },
+  quickChipTxtOn: { color: '#000' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#ddd',
+    borderColor: '#333',
     borderRadius: 14,
     paddingHorizontal: 14,
     gap: 4,
   },
-  inputDollar: { fontSize: 18, fontWeight: '700', color: '#000' },
-  input: { flex: 1, fontSize: 17, fontWeight: '600', color: '#000', paddingVertical: 13 },
-  inputHint: { fontSize: 12, color: '#999', marginTop: 8, marginBottom: 16 },
-  offerError: { fontSize: 13, color: '#c0392b', marginBottom: 12 },
-  sendBtn: { backgroundColor: '#000', borderRadius: 28, paddingVertical: 15, alignItems: 'center' },
-  sendBtnOff: { backgroundColor: '#ccc' },
-  sendBtnTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  inputDollar: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  input: { flex: 1, fontSize: 17, fontWeight: '600', color: '#fff', paddingVertical: 13 },
+  inputHint: { fontSize: 12, color: '#777', marginTop: 8, marginBottom: 16 },
+  offerError: { fontSize: 13, color: '#ff6b6b', marginBottom: 12 },
+  sendBtn: { backgroundColor: '#fff', borderRadius: 28, paddingVertical: 15, alignItems: 'center' },
+  sendBtnOff: { backgroundColor: '#333' },
+  sendBtnTxt: { fontSize: 15, fontWeight: '800', color: '#000' },
   sentWrap: { alignItems: 'center', paddingVertical: 30, gap: 8 },
-  sentTitle: { fontSize: 19, fontWeight: '800', color: '#000' },
+  sentTitle: { fontSize: 19, fontWeight: '800', color: '#fff' },
   sentSub: { fontSize: 13, color: '#888' },
 });

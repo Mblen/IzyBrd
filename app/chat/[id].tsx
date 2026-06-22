@@ -55,7 +55,7 @@ function OfferCard({
   return (
     <View style={s.offerCard}>
       <View style={s.offerHead}>
-        <Ionicons name="pricetag" size={14} color="#000" />
+        <Ionicons name="pricetag" size={14} color="#fff" />
         <Text style={s.offerLabel}>{incoming ? 'Offer received' : 'Your offer'}</Text>
       </View>
       <Text style={s.offerAmount}>${offer.amount}</Text>
@@ -75,7 +75,7 @@ function OfferCard({
           <Ionicons
             name={offer.status === 'accepted' ? 'checkmark-circle' : offer.status === 'declined' ? 'close-circle' : 'time-outline'}
             size={13}
-            color={offer.status === 'accepted' ? '#fff' : '#666'}
+            color={offer.status === 'accepted' ? '#000' : '#999'}
           />
           <Text style={[s.statusTxt, offer.status === 'accepted' && s.statusTxtAccepted]}>
             {offer.status === 'pending' ? 'Waiting on seller' : offer.status === 'accepted' ? 'Accepted' : 'Declined'}
@@ -149,7 +149,7 @@ export default function ChatScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.headerBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#000" />
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity
           style={s.headerCenter}
@@ -211,7 +211,7 @@ export default function ChatScreen() {
             disabled={!draft.trim()}
             activeOpacity={0.85}
           >
-            <Ionicons name="arrow-up" size={18} color="#fff" />
+            <Ionicons name="arrow-up" size={18} color="#000" />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -220,7 +220,7 @@ export default function ChatScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
   flex: { flex: 1 },
 
   header: {
@@ -230,7 +230,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#1e1e1e',
   },
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -238,57 +238,57 @@ const s = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerAvatarTxt: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  headerName: { fontSize: 15, fontWeight: '700', color: '#000' },
+  headerAvatarTxt: { color: '#000', fontSize: 12, fontWeight: '700' },
+  headerName: { fontSize: 15, fontWeight: '700', color: '#fff' },
 
   list: { padding: 16, gap: 10, flexGrow: 1 },
   msgRow: { flexDirection: 'row', justifyContent: 'flex-start' },
   msgRowMe: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '78%', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
-  bubbleThem: { backgroundColor: '#f2f2f2', borderBottomLeftRadius: 6 },
-  bubbleMe: { backgroundColor: '#000', borderBottomRightRadius: 6 },
-  bubbleTxt: { fontSize: 14, color: '#000', lineHeight: 20 },
-  bubbleTxtMe: { color: '#fff' },
+  bubbleThem: { backgroundColor: '#1e1e1e', borderBottomLeftRadius: 6 },
+  bubbleMe: { backgroundColor: '#fff', borderBottomRightRadius: 6 },
+  bubbleTxt: { fontSize: 14, color: '#fff', lineHeight: 20 },
+  bubbleTxtMe: { color: '#000' },
 
   offerCard: {
     width: 230,
     borderWidth: 1.5,
-    borderColor: '#e5e5e5',
+    borderColor: '#2a2a2a',
     borderRadius: 16,
     padding: 14,
     gap: 3,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#161616',
   },
   offerHead: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  offerLabel: { fontSize: 11, fontWeight: '700', color: '#000', textTransform: 'uppercase', letterSpacing: 0.5 },
-  offerAmount: { fontSize: 26, fontWeight: '800', color: '#000', marginTop: 2 },
-  offerItem: { fontSize: 13, color: '#777' },
+  offerLabel: { fontSize: 11, fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 },
+  offerAmount: { fontSize: 26, fontWeight: '800', color: '#fff', marginTop: 2 },
+  offerItem: { fontSize: 13, color: '#999' },
   offerBtns: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  declineBtn: { flex: 1, borderWidth: 1.5, borderColor: '#ddd', borderRadius: 18, paddingVertical: 8, alignItems: 'center' },
-  declineTxt: { fontSize: 13, fontWeight: '700', color: '#555' },
-  acceptBtn: { flex: 1, backgroundColor: '#000', borderRadius: 18, paddingVertical: 8, alignItems: 'center' },
-  acceptTxt: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  declineBtn: { flex: 1, borderWidth: 1.5, borderColor: '#333', borderRadius: 18, paddingVertical: 8, alignItems: 'center' },
+  declineTxt: { fontSize: 13, fontWeight: '700', color: '#ccc' },
+  acceptBtn: { flex: 1, backgroundColor: '#fff', borderRadius: 18, paddingVertical: 8, alignItems: 'center' },
+  acceptTxt: { fontSize: 13, fontWeight: '800', color: '#000' },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     alignSelf: 'flex-start',
-    backgroundColor: '#eee',
+    backgroundColor: '#222',
     borderRadius: 12,
     paddingHorizontal: 9,
     paddingVertical: 4,
     marginTop: 8,
   },
-  statusPillAccepted: { backgroundColor: '#000' },
-  statusTxt: { fontSize: 11, fontWeight: '700', color: '#666' },
-  statusTxtAccepted: { color: '#fff' },
+  statusPillAccepted: { backgroundColor: '#fff' },
+  statusTxt: { fontSize: 11, fontWeight: '700', color: '#999' },
+  statusTxtAccepted: { color: '#000' },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  emptyTxt: { fontSize: 13, color: '#aaa' },
+  emptyTxt: { fontSize: 13, color: '#888' },
 
   composer: {
     flexDirection: 'row',
@@ -297,26 +297,27 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: '#1e1e1e',
   },
   input: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: '#e5e5e5',
+    borderColor: '#2a2a2a',
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 9,
     fontSize: 14,
-    color: '#000',
+    color: '#fff',
+    backgroundColor: '#161616',
     maxHeight: 100,
   },
   sendBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendBtnOff: { backgroundColor: '#ccc' },
+  sendBtnOff: { backgroundColor: '#333' },
 });

@@ -83,7 +83,7 @@ export default function CheckoutScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[s.container, s.loadingWrap]} edges={['top', 'bottom']}>
-        <ActivityIndicator color="#000" />
+        <ActivityIndicator color="#fff" />
       </SafeAreaView>
     );
   }
@@ -93,7 +93,7 @@ export default function CheckoutScreen() {
       <SafeAreaView style={s.container} edges={['top', 'bottom']}>
         <View style={s.successWrap}>
           <View style={s.successCircle}>
-            <Ionicons name="checkmark" size={44} color="#fff" />
+            <Ionicons name="checkmark" size={44} color="#000" />
           </View>
           <Text style={s.successTitle}>You got the flip!</Text>
           <Text style={s.successSub}>
@@ -124,7 +124,7 @@ export default function CheckoutScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.headerBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#000" />
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Checkout</Text>
         <View style={s.headerBtn} />
@@ -147,7 +147,7 @@ export default function CheckoutScreen() {
         {/* Shipping address */}
         <Text style={s.sectionHeader}>Ship to</Text>
         <TouchableOpacity style={s.addressRow} activeOpacity={0.7}>
-          <Ionicons name="location-outline" size={18} color="#000" />
+          <Ionicons name="location-outline" size={18} color="#fff" />
           <View style={s.addressInfo}>
             <Text style={s.addressName}>Maria Silva</Text>
             <Text style={s.addressTxt}>11200 SW 8th St, Miami, FL 33199</Text>
@@ -160,7 +160,7 @@ export default function CheckoutScreen() {
         {/* Payment */}
         <Text style={s.sectionHeader}>Pay with</Text>
         <TouchableOpacity style={s.addressRow} activeOpacity={0.7}>
-          <Ionicons name="card-outline" size={18} color="#000" />
+          <Ionicons name="card-outline" size={18} color="#fff" />
           <View style={s.addressInfo}>
             <Text style={s.addressName}>Visa ending 4242</Text>
             <Text style={s.addressTxt}>Tap to change payment method</Text>
@@ -212,7 +212,7 @@ export default function CheckoutScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
   loadingWrap: { alignItems: 'center', justifyContent: 'center' },
 
   header: {
@@ -222,55 +222,55 @@ const s = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#1e1e1e',
   },
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '800', color: '#000', letterSpacing: -0.3 },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
 
   scroll: { padding: 18, paddingBottom: 24 },
 
   itemRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  itemImg: { width: 72, height: 72, borderRadius: 10, backgroundColor: '#f2f2f2' },
+  itemImg: { width: 72, height: 72, borderRadius: 10, backgroundColor: '#161616' },
   itemInfo: { flex: 1, gap: 2 },
-  itemTitle: { fontSize: 15, fontWeight: '800', color: '#000' },
+  itemTitle: { fontSize: 15, fontWeight: '800', color: '#fff' },
   itemMeta: { fontSize: 12, color: '#888' },
   itemSeller: { fontSize: 12, color: '#888' },
-  itemPrice: { fontSize: 16, fontWeight: '800', color: '#000' },
+  itemPrice: { fontSize: 16, fontWeight: '800', color: '#fff' },
 
-  divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 16 },
+  divider: { height: 1, backgroundColor: '#1a1a1a', marginVertical: 16 },
 
   sectionHeader: {
     fontFamily: 'Georgia',
     fontStyle: 'italic',
     fontSize: 16,
-    color: '#000',
+    color: '#fff',
     marginBottom: 10,
   },
   addressRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   addressInfo: { flex: 1, gap: 1 },
-  addressName: { fontSize: 14, fontWeight: '700', color: '#000' },
+  addressName: { fontSize: 14, fontWeight: '700', color: '#fff' },
   addressTxt: { fontSize: 12, color: '#888' },
 
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 },
   totalLabel: { fontSize: 13, color: '#888' },
-  totalValue: { fontSize: 13, fontWeight: '600', color: '#000' },
-  totalRowFinal: { borderTopWidth: 1, borderTopColor: '#f0f0f0', marginTop: 6, paddingTop: 11 },
-  totalFinalLabel: { fontSize: 15, fontWeight: '800', color: '#000' },
-  totalFinalValue: { fontSize: 15, fontWeight: '800', color: '#000' },
+  totalValue: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  totalRowFinal: { borderTopWidth: 1, borderTopColor: '#1a1a1a', marginTop: 6, paddingTop: 11 },
+  totalFinalLabel: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  totalFinalValue: { fontSize: 15, fontWeight: '800', color: '#fff' },
 
   protectionNote: { flexDirection: 'row', gap: 8, marginTop: 16, paddingRight: 12 },
-  protectionTxt: { flex: 1, fontSize: 11, color: '#999', lineHeight: 16 },
+  protectionTxt: { flex: 1, fontSize: 11, color: '#888', lineHeight: 16 },
 
   payBar: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: '#1e1e1e',
   },
-  payBtn: { backgroundColor: '#000', borderRadius: 28, paddingVertical: 15, alignItems: 'center' },
-  payBtnOff: { backgroundColor: '#999' },
-  payBtnTxt: { fontSize: 15, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
-  payError: { fontSize: 13, color: '#c0392b', textAlign: 'center', marginBottom: 10 },
+  payBtn: { backgroundColor: '#fff', borderRadius: 28, paddingVertical: 15, alignItems: 'center' },
+  payBtnOff: { backgroundColor: '#444' },
+  payBtnTxt: { fontSize: 15, fontWeight: '800', color: '#000', letterSpacing: 0.2 },
+  payError: { fontSize: 13, color: '#ff6b6b', textAlign: 'center', marginBottom: 10 },
 
   // Success state
   successWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 12 },
@@ -278,34 +278,34 @@ const s = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
   },
-  successTitle: { fontSize: 26, fontWeight: '800', color: '#000', letterSpacing: -0.5 },
-  successSub: { fontSize: 14, color: '#777', textAlign: 'center', lineHeight: 21 },
+  successTitle: { fontSize: 26, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  successSub: { fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 21 },
   successCard: {
     alignSelf: 'stretch',
     borderWidth: 1.5,
-    borderColor: '#eee',
+    borderColor: '#222',
     borderRadius: 16,
     padding: 16,
     gap: 3,
     marginTop: 12,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#161616',
   },
-  successCardLabel: { fontSize: 10, fontWeight: '700', color: '#999', textTransform: 'uppercase', letterSpacing: 1 },
-  successCardTitle: { fontSize: 16, fontWeight: '800', color: '#000' },
+  successCardLabel: { fontSize: 10, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 1 },
+  successCardTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
   successCardMeta: { fontSize: 12, color: '#888' },
   successBtn: {
     alignSelf: 'stretch',
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     borderRadius: 28,
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 16,
   },
-  successBtnTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  successBtnTxt: { fontSize: 15, fontWeight: '800', color: '#000' },
   successLink: { fontSize: 13, color: '#888', marginTop: 4 },
 });

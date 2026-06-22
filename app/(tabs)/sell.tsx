@@ -65,23 +65,23 @@ const chipStyles = StyleSheet.create({
   },
   chip: {
     borderWidth: 1.5,
-    borderColor: '#d0d0d0',
+    borderColor: '#2a2a2a',
     borderRadius: 24,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#161616',
   },
   chipActive: {
-    borderColor: '#000',
-    backgroundColor: '#000',
+    borderColor: '#fff',
+    backgroundColor: '#fff',
   },
   chipText: {
     fontSize: 13,
-    color: '#555',
+    color: '#bbb',
     fontWeight: '500',
   },
   chipTextActive: {
-    color: '#fff',
+    color: '#000',
     fontWeight: '700',
   },
 });
@@ -350,7 +350,7 @@ export default function SellScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#0a0a0a',
   },
 
   // Header
@@ -361,19 +361,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#1e1e1e',
   },
   headerBtn: {
     minWidth: 60,
   },
   headerCancel: {
     fontSize: 15,
-    color: '#555',
+    color: '#999',
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#000',
+    color: '#fff',
     letterSpacing: -0.3,
   },
   postBtn: {
@@ -383,30 +383,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#d0d0d0',
+    borderColor: '#444',
   },
   postBtnActive: {
-    backgroundColor: '#000',
-    borderColor: '#000',
+    backgroundColor: '#fff',
+    borderColor: '#fff',
   },
   postBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#bbb',
+    color: '#777',
   },
   postBtnTextActive: {
-    color: '#fff',
+    color: '#000',
   },
 
   errorBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#fdecea',
+    backgroundColor: 'rgba(255,80,80,0.12)',
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  errorTxt: { flex: 1, fontSize: 13, color: '#c0392b' },
+  errorTxt: { flex: 1, fontSize: 13, color: '#ff6b6b' },
 
   // Scroll
   scroll: {
@@ -426,30 +426,30 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: '#2a2a2a',
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fafafa',
+    backgroundColor: '#161616',
     gap: 6,
   },
   photoIcon: {
     fontSize: 36,
-    color: '#999',
+    color: '#888',
   },
   photoHint: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: '#ddd',
   },
   photoSub: {
     fontSize: 12,
-    color: '#aaa',
+    color: '#888',
   },
   photoCover: {
     height: 200,
     borderRadius: 12,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#161616',
   },
   photoThumbs: {
     flexDirection: 'row',
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   photoThumbImg: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#161616',
   },
   coverBadge: {
     position: 'absolute',
@@ -497,21 +497,21 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
+    borderColor: '#2a2a2a',
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fafafa',
+    backgroundColor: '#161616',
   },
   photoThumbPlus: {
     fontSize: 20,
-    color: '#ccc',
+    color: '#777',
   },
 
   // Divider
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#1a1a1a',
     marginVertical: 8,
   },
 
@@ -529,29 +529,29 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#000',
+    color: '#fff',
     letterSpacing: 0.1,
   },
   labelRequired: {
     fontSize: 14,
-    color: '#000',
+    color: '#fff',
     fontWeight: '700',
   },
   fieldHint: {
     fontSize: 12,
-    color: '#999',
+    color: '#888',
     lineHeight: 17,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
+    borderColor: '#2a2a2a',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#000',
-    backgroundColor: '#fff',
+    color: '#fff',
+    backgroundColor: '#161616',
   },
   inputMultiline: {
     minHeight: 100,
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontSize: 11,
-    color: '#bbb',
+    color: '#777',
     textAlign: 'right',
     marginTop: 4,
   },
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
   priceDollar: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#000',
+    color: '#fff',
   },
   priceInput: {
     flex: 1,

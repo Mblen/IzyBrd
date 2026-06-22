@@ -20,7 +20,7 @@ function TabIcon({
       <Ionicons
         name={focused ? iconOn : icon}
         size={22}
-        color={focused ? '#000' : '#b0b0b0'}
+        color={focused ? '#fff' : '#777'}
       />
       <Text style={[s.label, focused && s.labelOn]}>{label}</Text>
     </View>
@@ -41,13 +41,13 @@ export default function TabLayout() {
 
 const s = StyleSheet.create({
   bar: {
-    backgroundColor: '#fff',
-    borderTopColor: '#f0f0f0',
+    backgroundColor: '#0a0a0a',
+    borderTopColor: '#1e1e1e',
     borderTopWidth: 1,
     height: 72,
     paddingBottom: 8,
   },
   wrap: { alignItems: 'center', gap: 3, paddingTop: 8, minWidth: 56 },
-  label: { fontSize: 10, color: '#b0b0b0', fontWeight: '500', letterSpacing: 0.2 },
-  labelOn: { color: '#000', fontWeight: '700' },
+  label: { fontSize: 10, color: '#777', fontWeight: '500', letterSpacing: 0.2 },
+  labelOn: { color: '#fff', fontWeight: '700' },
 });
