@@ -10,6 +10,7 @@ import {
   Animated,
   Platform,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -115,6 +116,7 @@ function ActionBtn({
 
 // --- Single Flip Card -----------------------------------------------------------
 function FlipCard({ item }: { item: typeof FLIPS[0] }) {
+  const { width: winW, height: winH } = useWindowDimensions();
   const isReal = isRealFlipId(item.id);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -162,11 +164,11 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
   ).join('');
 
   return (
-    <View style={[styles.card, { backgroundColor: item.imageBg }]}>
+    <View style={[styles.card, { width: winW, height: winH, backgroundColor: item.imageBg }]}>
       {/* Background image */}
       <Image
         source={{ uri: item.image || DEFAULT_FLIP_IMAGE }}
-        style={styles.cardImage}
+        style={[styles.cardImage, { width: winW, height: winH }]}
         resizeMode="cover"
       />
 
@@ -275,6 +277,7 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
 
 // --- Home Screen ----------------------------------------------------------------
 export default function HomeScreen() {
+  const { height: winH } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState(FOR_YOU_TAB); // default: For You (rightmost)
   const [dbFlips, setDbFlips] = useState<FeedItem[]>([]);
   const listRef = useRef<FlatList>(null);
@@ -338,11 +341,11 @@ export default function HomeScreen() {
         renderItem={({ item }) => <FlipCard item={item} />}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        snapToInterval={SCREEN_HEIGHT}
+        snapToInterval={winH}
         decelerationRate="fast"
         snapToAlignment="start"
         ListEmptyComponent={
-          <View style={styles.emptyFeed}>
+          <View style={[styles.emptyFeed, { width: '100%', height: winH }]}>
             <Ionicons name="people-outline" size={40} color="rgba(255,255,255,0.4)" />
             <Text style={styles.emptyFeedTitle}>Nothing here yet</Text>
             <Text style={styles.emptyFeedText}>
