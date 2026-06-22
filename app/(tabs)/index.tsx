@@ -163,12 +163,17 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
     i < filledStars ? '★' : '☆'
   ).join('');
 
+  // On a wide screen (e.g. a laptop browser) keep the card phone-shaped and
+  // centered, with black bars on the sides, so portrait photos aren't cropped.
+  const cardW = Math.min(winW, 480);
+
   return (
-    <View style={[styles.card, { width: winW, height: winH, backgroundColor: item.imageBg }]}>
+    <View style={{ width: winW, height: winH, backgroundColor: '#0a0a0a', alignItems: 'center' }}>
+    <View style={[styles.card, { width: cardW, height: winH, backgroundColor: item.imageBg }]}>
       {/* Background image */}
       <Image
         source={{ uri: item.image || DEFAULT_FLIP_IMAGE }}
-        style={[styles.cardImage, { width: winW, height: winH }]}
+        style={[styles.cardImage, { width: cardW, height: winH }]}
         resizeMode="cover"
       />
 
@@ -271,6 +276,7 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
           )}
         </View>
       </View>
+    </View>
     </View>
   );
 }

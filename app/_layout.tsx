@@ -1,10 +1,16 @@
 import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
+import { View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function RootLayout() {
+  // Preload the icon font so glyphs render in the production web build
+  const [fontsLoaded] = useFonts(Ionicons.font);
+
   useEffect(() => {
     // Without backend keys, keep the original demo flow (onboarding once).
     if (!isSupabaseConfigured) {
@@ -23,6 +29,11 @@ export default function RootLayout() {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // Hold render until the icon font is ready so we never flash tofu glyphs
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: '#0a0a0a' }} />;
+  }
 
   return (
     <>
