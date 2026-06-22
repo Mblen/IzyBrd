@@ -18,21 +18,7 @@ function initials(name: string): string {
 
 const PROFILE_TABS = ['Shop', 'Sold', 'Purchases', 'Likes'];
 
-const IMG = 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo';
-
-const MY_LISTINGS = [
-  { id: '1', title: 'Christy Hoodie',    price: 38, color: '#1a1a1a', image: `${IMG}/art-collection.jpg` },
-  { id: '2', title: 'Chase Crew',        price: 32, color: '#1a1a1a', image: `${IMG}/navy-ny.jpg` },
-  { id: '3', title: 'Luke Zip-Up',       price: 54, color: '#1a1a1a', image: `${IMG}/star-zip.jpg` },
-  { id: '4', title: 'Hailey Crop Crew',  price: 29, color: '#1a1a1a', image: `${IMG}/grey-qzip.jpg` },
-  { id: '5', title: 'Remi Mock Neck',    price: 46, color: '#1a1a1a', image: `${IMG}/brown-qzip.jpg` },
-  { id: '6', title: 'Nash Vintage Crew', price: 52, color: '#1a1a1a', image: `${IMG}/striped-qzip.jpg` },
-];
-
-const SOLD = [
-  { id: 'a', title: 'Jax Vintage Crew',  price: 44, color: '#1a1a1a', image: `${IMG}/white-crew.jpg` },
-  { id: 'b', title: 'Sydney Hoodie',     price: 36, color: '#1a1a1a', image: `${IMG}/beige-hoodie.jpg` },
-];
+const DEFAULT_IMG = 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/white-crew.jpg';
 
 export default function ProfileScreen() {
   const { width: winW } = useWindowDimensions();
@@ -77,16 +63,12 @@ export default function ProfileScreen() {
     signOut();
   };
 
-  // Real flips first, then the mock seed listings beneath them
-  const shopData = [
-    ...myFlips.map(f => ({ id: f.id, title: f.title, price: f.price, color: '#1a1a1a', image: f.image_url || `${IMG}/white-crew.jpg` })),
-    ...MY_LISTINGS,
-  ];
-  const data =
-    activeTab === 0 ? shopData
-    : activeTab === 1 ? SOLD
-    : [];
-  const activeCount = activeTab === 0 ? shopData.length : activeTab === 1 ? SOLD.length : 0;
+  // Only the user's own real listings show in their shop
+  const shopData = myFlips.map(f => ({
+    id: f.id, title: f.title, price: f.price, color: '#1a1a1a', image: f.image_url || DEFAULT_IMG,
+  }));
+  const data = activeTab === 0 ? shopData : [];
+  const activeCount = activeTab === 0 ? shopData.length : 0;
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -203,8 +185,17 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={s.emptyState}>
-            <Ionicons name={activeTab === 2 ? 'cart-outline' : 'heart-outline'} size={36} color="#444" />
-            <Text style={s.emptyTxt}>{activeTab === 2 ? 'No purchases yet' : 'Nothing liked yet'}</Text>
+            <Ionicons
+              name={activeTab === 0 ? 'shirt-outline' : activeTab === 1 ? 'pricetag-outline' : activeTab === 2 ? 'cart-outline' : 'heart-outline'}
+              size={36}
+              color="#444"
+            />
+            <Text style={s.emptyTxt}>
+              {activeTab === 0 ? 'No listings yet — tap Sell to post your first flip'
+                : activeTab === 1 ? 'Nothing sold yet'
+                : activeTab === 2 ? 'No purchases yet'
+                : 'Nothing liked yet'}
+            </Text>
           </View>
         )}
 

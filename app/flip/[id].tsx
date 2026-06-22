@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -60,6 +61,7 @@ const FLIPS: Record<string, FlipView> = {
 };
 
 export default function FlipDetailScreen() {
+  const { width: winW } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
   // Seeded feed flips ('1'-'5') come from mock data; anything else is a real
   // flip loaded from the database.
@@ -147,7 +149,7 @@ export default function FlipDetailScreen() {
     <View style={s.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
         {/* Hero image with back + heart overlays */}
-        <View style={s.imageWrap}>
+        <View style={[s.imageWrap, { width: winW, height: winW * 1.15 }]}>
           <Image source={{ uri: flip.image || DEFAULT_FLIP_IMAGE }} style={s.image} resizeMode="cover" />
           <SafeAreaView style={s.imageOverlay} edges={['top']} pointerEvents="box-none">
             <TouchableOpacity style={s.overlayBtn} onPress={() => router.back()}>
