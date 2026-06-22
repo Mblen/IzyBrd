@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, Dimensions, FlatList, Image,
+  StyleSheet, FlatList, Image, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -16,26 +16,27 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || (name[0] ?? '?').toUpperCase();
 }
 
-const { width: W } = Dimensions.get('window');
-const CELL = (W - 4) / 3;
-
 const PROFILE_TABS = ['Shop', 'Sold', 'Purchases', 'Likes'];
 
+const IMG = 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo';
+
 const MY_LISTINGS = [
-  { id: '1', title: 'Christy Hoodie',    price: 38, color: '#2d1a0e' },
-  { id: '2', title: 'Chase Crew',        price: 32, color: '#1e1a2d' },
-  { id: '3', title: 'Luke Zip-Up',       price: 54, color: '#1a2410' },
-  { id: '4', title: 'Hailey Crop Crew',  price: 29, color: '#2a1f14' },
-  { id: '5', title: 'Remi Mock Neck',    price: 46, color: '#1a2220' },
-  { id: '6', title: 'Nash Vintage Crew', price: 52, color: '#2d1a1a' },
+  { id: '1', title: 'Christy Hoodie',    price: 38, color: '#1a1a1a', image: `${IMG}/art-collection.jpg` },
+  { id: '2', title: 'Chase Crew',        price: 32, color: '#1a1a1a', image: `${IMG}/navy-ny.jpg` },
+  { id: '3', title: 'Luke Zip-Up',       price: 54, color: '#1a1a1a', image: `${IMG}/star-zip.jpg` },
+  { id: '4', title: 'Hailey Crop Crew',  price: 29, color: '#1a1a1a', image: `${IMG}/grey-qzip.jpg` },
+  { id: '5', title: 'Remi Mock Neck',    price: 46, color: '#1a1a1a', image: `${IMG}/brown-qzip.jpg` },
+  { id: '6', title: 'Nash Vintage Crew', price: 52, color: '#1a1a1a', image: `${IMG}/striped-qzip.jpg` },
 ];
 
 const SOLD = [
-  { id: 'a', title: 'Jax Vintage Crew',  price: 44, color: '#2d1a0e' },
-  { id: 'b', title: 'Sydney Hoodie',     price: 36, color: '#1a1a2d' },
+  { id: 'a', title: 'Jax Vintage Crew',  price: 44, color: '#1a1a1a', image: `${IMG}/white-crew.jpg` },
+  { id: 'b', title: 'Sydney Hoodie',     price: 36, color: '#1a1a1a', image: `${IMG}/beige-hoodie.jpg` },
 ];
 
 export default function ProfileScreen() {
+  const { width: winW } = useWindowDimensions();
+  const cell = (winW - 4) / 3; // responsive 3-column grid
   const [activeTab, setActiveTab] = useState(0);
   const [promoVisible, setPromoVisible] = useState(true);
 
@@ -78,12 +79,12 @@ export default function ProfileScreen() {
 
   // Real flips first, then the mock seed listings beneath them
   const shopData = [
-    ...myFlips.map(f => ({ id: f.id, title: f.title, price: f.price, color: '#1a1a1a', image: f.image_url ?? '' })),
-    ...MY_LISTINGS.map(l => ({ ...l, image: '' })),
+    ...myFlips.map(f => ({ id: f.id, title: f.title, price: f.price, color: '#1a1a1a', image: f.image_url || `${IMG}/white-crew.jpg` })),
+    ...MY_LISTINGS,
   ];
   const data =
     activeTab === 0 ? shopData
-    : activeTab === 1 ? SOLD.map(l => ({ ...l, image: '' }))
+    : activeTab === 1 ? SOLD
     : [];
   const activeCount = activeTab === 0 ? shopData.length : activeTab === 1 ? SOLD.length : 0;
 
@@ -186,12 +187,12 @@ export default function ProfileScreen() {
             {data.map(item => (
               <TouchableOpacity
                 key={item.id}
-                style={[s.cell, { backgroundColor: item.color }]}
+                style={[s.cell, { width: cell, height: cell, backgroundColor: item.color }]}
                 activeOpacity={0.85}
                 onPress={() => router.push(`/flip/${item.id}` as any)}
               >
                 {item.image ? (
-                  <Image source={{ uri: item.image }} style={s.cellImage} resizeMode="cover" />
+                  <Image source={{ uri: item.image }} style={[s.cellImage, { width: cell, height: cell }]} resizeMode="cover" />
                 ) : null}
                 <View style={s.cellFooter}>
                   <Text style={s.cellTitle} numberOfLines={1}>{item.title}</Text>
@@ -254,8 +255,8 @@ const s = StyleSheet.create({
   countRow: { paddingHorizontal: 16, paddingVertical: 10 },
   countTxt: { fontSize: 12, color: '#555' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
-  cell: { width: CELL, height: CELL },
-  cellImage: { position: 'absolute', top: 0, left: 0, width: CELL, height: CELL },
+  cell: {},
+  cellImage: { position: 'absolute', top: 0, left: 0 },
   cellFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 7, backgroundColor: 'rgba(0,0,0,0.5)' },
   cellTitle: { fontSize: 10, color: '#fff', fontWeight: '600' },
   cellPrice: { fontSize: 11, color: '#fff', fontWeight: '800' },

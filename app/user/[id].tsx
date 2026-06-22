@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, Dimensions, Image, ActivityIndicator,
+  StyleSheet, Image, ActivityIndicator, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -17,8 +17,6 @@ type SellerView = {
   flips: { id: string; title: string; price: number; color: string; image?: string }[];
 };
 
-const { width: W } = Dimensions.get('window');
-const CELL = (W - 4) / 3;
 
 // Mock sellers — keyed by handle without the @ (fallback for the seeded feed flips)
 const SELLERS: Record<string, SellerView> = {
@@ -75,6 +73,8 @@ const SELLERS: Record<string, SellerView> = {
 const TABS = ['Shop', 'Sold', 'Likes'];
 
 export default function UserProfileScreen() {
+  const { width: winW } = useWindowDimensions();
+  const cell = (winW - 4) / 3; // responsive 3-column grid
   const { id } = useLocalSearchParams<{ id: string }>();
   const username = (id ?? '').replace('@', '');
   const mockSeller = SELLERS[username];
@@ -253,12 +253,12 @@ export default function UserProfileScreen() {
             {data.map(item => (
               <TouchableOpacity
                 key={item.id}
-                style={[s.cell, { backgroundColor: item.color }]}
+                style={[s.cell, { width: cell, height: cell, backgroundColor: item.color }]}
                 activeOpacity={0.85}
                 onPress={() => router.push(`/flip/${item.id}` as any)}
               >
                 {item.image ? (
-                  <Image source={{ uri: item.image }} style={s.cellImage} resizeMode="cover" />
+                  <Image source={{ uri: item.image }} style={[s.cellImage, { width: cell, height: cell }]} resizeMode="cover" />
                 ) : null}
                 <View style={s.cellFooter}>
                   <Text style={s.cellTitle} numberOfLines={1}>{item.title}</Text>
@@ -316,8 +316,8 @@ const s = StyleSheet.create({
   tabTxtOn: { color: '#fff', fontWeight: '700' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, padding: 2 },
-  cell: { width: CELL, height: CELL },
-  cellImage: { position: 'absolute', top: 0, left: 0, width: CELL, height: CELL },
+  cell: {},
+  cellImage: { position: 'absolute', top: 0, left: 0 },
   cellFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 7, backgroundColor: 'rgba(0,0,0,0.5)' },
   cellTitle: { fontSize: 10, color: '#fff', fontWeight: '600' },
   cellPrice: { fontSize: 11, color: '#fff', fontWeight: '800' },
