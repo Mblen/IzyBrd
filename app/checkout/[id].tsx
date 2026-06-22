@@ -25,8 +25,6 @@ const FLIPS: Record<string, CheckoutFlip> = {
   '1': { title: 'Christy Hoodie', seller: '@christybb', price: 38, condition: 'Like New Without Tags', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/art-collection.jpg' },
   '2': { title: 'Chase Crew', seller: '@haileyflipper', price: 32, condition: 'Gently Used', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/white-crew.jpg' },
   '3': { title: 'Luke Zip-Up', seller: '@themiaedits', price: 54, condition: 'New With Tags', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/star-zip.jpg' },
-  '4': { title: 'Hailey Crop Crew', seller: '@sydneyarchive', price: 29, condition: 'Gently Used', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/beige-hoodie.jpg' },
-  '5': { title: 'Remi Mock Neck', seller: '@remivintageco', price: 46, condition: 'Vintage', size: 'One Size', image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/rust-hoodie.jpg' },
 };
 
 export default function CheckoutScreen() {

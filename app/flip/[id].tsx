@@ -57,22 +57,6 @@ const FLIPS: Record<string, FlipView> = {
     price: 54, city: 'Austin, TX',
     image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/star-zip.jpg',
   },
-  '4': {
-    seller: '@sydneyarchive', rating: 4.7, reviews: 5,
-    style: 'Crop', size: 'One Size', condition: 'Gently Used',
-    title: 'Hailey Crop Crew',
-    story: `The coziest thing I own. But my style shifted and she deserves more wear than I can give.`,
-    price: 29, city: 'Nashville, TN',
-    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/beige-hoodie.jpg',
-  },
-  '5': {
-    seller: '@remivintageco', rating: 4.9, reviews: 34,
-    style: 'Mock Neck', size: 'One Size', condition: 'Vintage',
-    title: 'Remi Mock Neck',
-    story: `Thrifted this in Portland. The kind of piece that makes strangers stop you on the street.`,
-    price: 46, city: 'Portland, OR',
-    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/rust-hoodie.jpg',
-  },
 };
 
 export default function FlipDetailScreen() {

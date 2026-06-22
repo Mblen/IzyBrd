@@ -58,28 +58,6 @@ const FLIPS = [
     imageBg: '#1a2410',
     image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/star-zip.jpg',
   },
-  {
-    id: '4',
-    seller: '@sydneyarchive',
-    rating: 4.7, reviews: 5,
-    style: 'Crop', size: 'One Size', condition: 'Gently Used',
-    title: 'Hailey Crop Crew',
-    story: `The coziest thing I own. But my style shifted and she deserves more wear than I can give.`,
-    price: 29, city: 'Nashville, TN', likes: 118, comments: 9,
-    imageBg: '#2a1f14',
-    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/beige-hoodie.jpg',
-  },
-  {
-    id: '5',
-    seller: '@remivintageco',
-    rating: 4.9, reviews: 34,
-    style: 'Mock Neck', size: 'One Size', condition: 'Vintage',
-    title: 'Remi Mock Neck',
-    story: `Thrifted this in Portland. The kind of piece that makes strangers stop you on the street.`,
-    price: 46, city: 'Portland, OR', likes: 203, comments: 28,
-    imageBg: '#1a2220',
-    image: 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/public/flip-photos/demo/rust-hoodie.jpg',
-  },
 ];
 
 // For You sits on the right and is the default tab (TikTok-style)
