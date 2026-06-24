@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { getMyOffers, OfferItem } from '../../lib/offers';
 import { getMyOrders, OrderItem } from '../../lib/orders';
+import { getMyActivity, ActivityItem } from '../../lib/activity';
 
 const TABS = ['All', 'Messages', 'Offers', 'Orders', 'Activity'];
 
@@ -31,18 +32,6 @@ const ITEMS = [
     time: '1h', unread: false,
   },
   {
-    id: '4', tab: 'Activity', type: 'follow',
-    avatar: 'SA', name: 'sydneyarchive',
-    preview: 'started following you',
-    time: '2h', unread: false,
-  },
-  {
-    id: '5', tab: 'Activity', type: 'like',
-    avatar: 'RC', name: 'remivintageco',
-    preview: 'liked your Luke Zip-Up listing',
-    time: '3h', unread: false,
-  },
-  {
     id: '6', tab: 'Messages', type: 'message',
     avatar: 'TM', name: 'themiaedits',
     preview: 'Would you do $48 shipped for the Nash Crew?',
@@ -60,18 +49,6 @@ const ITEMS = [
     preview: 'Delivered! How was the Chase Crew?',
     time: '2d', unread: false,
   },
-  {
-    id: '9', tab: 'Activity', type: 'like',
-    avatar: 'NV', name: 'nashvintageco',
-    preview: 'liked your Remi Mock Neck listing',
-    time: '2d', unread: false,
-  },
-  {
-    id: '10', tab: 'Activity', type: 'follow',
-    avatar: 'MB', name: 'malibubrd',
-    preview: 'started following you',
-    time: '3d', unread: false,
-  },
 ];
 
 function typeIcon(type: string): keyof typeof Ionicons.glyphMap {
@@ -80,6 +57,7 @@ function typeIcon(type: string): keyof typeof Ionicons.glyphMap {
   if (type === 'order') return 'cube-outline';
   if (type === 'follow') return 'person-add-outline';
   if (type === 'like') return 'heart-outline';
+  if (type === 'comment') return 'chatbubble-ellipses-outline';
   return 'ellipse-outline';
 }
 
@@ -87,14 +65,16 @@ export default function InboxScreen() {
   const [active, setActive] = useState('All');
   const [sentOffers, setSentOffers] = useState<OfferItem[]>([]);
   const [myOrders, setMyOrders] = useState<OrderItem[]>([]);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
 
-  // Load offers + orders from the database whenever the inbox gains focus
+  // Load offers + orders + activity from the database whenever the inbox gains focus
   useFocusEffect(
     useCallback(() => {
-      let active = true;
-      getMyOffers().then(o => { if (active) setSentOffers(o); }).catch(() => {});
-      getMyOrders().then(o => { if (active) setMyOrders(o); }).catch(() => {});
-      return () => { active = false; };
+      let live = true;
+      getMyOffers().then(o => { if (live) setSentOffers(o); }).catch(() => {});
+      getMyOrders().then(o => { if (live) setMyOrders(o); }).catch(() => {});
+      getMyActivity().then(a => { if (live) setActivity(a); }).catch(() => {});
+      return () => { live = false; };
     }, [])
   );
 
@@ -116,9 +96,19 @@ export default function InboxScreen() {
     time: o.time, unread: true,
   }));
 
-  const all = [...orderItems, ...sentItems, ...ITEMS];
+  // Real activity (likes, comments, follows, offers received) on your listings
+  const activityItems = activity.map(a => ({
+    id: a.id, tab: 'Activity', type: a.type,
+    avatar: a.actor.slice(0, 2).toUpperCase(),
+    name: a.actor,
+    preview: a.preview,
+    time: a.time, unread: a.unread,
+  }));
+
+  const all = [...activityItems, ...orderItems, ...sentItems, ...ITEMS];
   const list = active === 'All' ? all : all.filter(i => i.tab === active);
   const unreadCount = all.filter(i => i.unread).length;
+  const activityUnread = activityItems.some(i => i.unread);
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -147,6 +137,7 @@ export default function InboxScreen() {
             activeOpacity={0.8}
           >
             <Text style={[s.tabTxt, active === t && s.tabTxtOn]}>{t}</Text>
+            {t === 'Activity' && activityUnread && <View style={s.tabDot} />}
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -168,8 +159,10 @@ export default function InboxScreen() {
             style={[s.row, idx < list.length - 1 && s.rowBorder]}
             activeOpacity={0.75}
             onPress={() => {
-              // Orders are not conversations - only people open a chat thread
-              if (item.tab !== 'Orders') router.push(`/chat/${item.name}` as any);
+              // Activity items open the person's profile; messages/offers open a
+              // chat thread; orders aren't conversations.
+              if (item.tab === 'Activity') router.push(`/user/${item.name}` as any);
+              else if (item.tab !== 'Orders') router.push(`/chat/${item.name}` as any);
             }}
           >
             {/* Avatar */}
@@ -206,7 +199,8 @@ const s = StyleSheet.create({
   badgeTxt: { color: '#000', fontSize: 11, fontWeight: '800' },
   tabScroll: { flexGrow: 0 },
   tabRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, alignItems: 'center' },
-  tab: { borderWidth: 1.5, borderColor: '#2a2a2a', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  tab: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderColor: '#2a2a2a', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  tabDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#ff3b30' },
   tabOn: { backgroundColor: '#fff', borderColor: '#fff' },
   tabTxt: { fontSize: 13, color: '#999', fontWeight: '500' },
   tabTxtOn: { color: '#000', fontWeight: '700' },
