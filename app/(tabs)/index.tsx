@@ -20,7 +20,9 @@ import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
 import { getFeedFlips, getFollowingFeedFlips, DEFAULT_FLIP_IMAGE } from '../../lib/flips';
 import { isRealFlipId } from '../../lib/ids';
 import { getLikeCount, hasLiked, like, unlike, subscribeLikes, hasSaved, save, unsave } from '../../lib/engagement';
+import { getCommentCount, subscribeComments } from '../../lib/comments';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import CommentsSheet from '../../components/CommentsSheet';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -121,7 +123,18 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [likes, setLikes] = useState(item.likes);
+  const [comments, setComments] = useState(item.comments);
+  const [showComments, setShowComments] = useState(false);
   const sold = useSyncExternalStore(subscribeLocalOrders, () => isLocalSold(item.id), () => isLocalSold(item.id));
+
+  // Keep the comment count live (works for real flips and seeded demo flips).
+  useEffect(() => {
+    let active = true;
+    const refresh = () => getCommentCount(item.id).then(c => { if (active) setComments(c); }).catch(() => {});
+    refresh();
+    const unsub = subscribeComments(item.id, refresh);
+    return () => { active = false; unsub(); };
+  }, [item.id]);
 
   // Real flips: load like count + my like/save state, and keep the count live
   useEffect(() => {
@@ -155,8 +168,6 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
     setSaved(next);
     (next ? save(item.id) : unsave(item.id)).catch(() => setSaved(!next));
   };
-
-  const messageSeller = () => router.push(`/chat/${item.seller.replace('@', '')}` as any);
 
   const filledStars = Math.round(item.rating);
   const stars = Array.from({ length: 5 }, (_, i) =>
@@ -211,7 +222,7 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
         <View style={{ height: 16 }} />
 
         <ActionBtn icon="heart-outline" iconActive="heart" count={likes} onPress={toggleLike} active={liked} />
-        <ActionBtn icon="chatbubble-outline" onPress={messageSeller} />
+        <ActionBtn icon="chatbubble-outline" count={comments} onPress={() => setShowComments(true)} />
         <ActionBtn icon="arrow-redo-outline" onPress={() => {}} />
         <ActionBtn icon="bookmark-outline" iconActive="bookmark" onPress={toggleSave} active={saved} />
       </View>
@@ -277,6 +288,13 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
         </View>
       </View>
     </View>
+
+      <CommentsSheet
+        flipId={item.id}
+        visible={showComments}
+        onClose={() => setShowComments(false)}
+        onCountChange={setComments}
+      />
     </View>
   );
 }

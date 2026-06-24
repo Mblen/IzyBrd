@@ -299,3 +299,35 @@ create policy "users can unsave"
 
 -- Live like counts
 alter publication supabase_realtime add table public.likes;
+
+-- ---------------------------------------------------------------------------
+-- comments: public comments on a flip (TikTok-style), live-updating
+-- ---------------------------------------------------------------------------
+create table if not exists public.comments (
+  id          uuid primary key default gen_random_uuid(),
+  flip_id     uuid not null references public.flips (id) on delete cascade,
+  user_id     uuid not null references public.profiles (id) on delete cascade,
+  body        text not null check (char_length(body) between 1 and 500),
+  created_at  timestamptz not null default now()
+);
+create index if not exists comments_flip_idx on public.comments (flip_id, created_at);
+alter table public.comments enable row level security;
+
+drop policy if exists "comments are viewable by everyone" on public.comments;
+create policy "comments are viewable by everyone"
+  on public.comments for select using (true);
+
+drop policy if exists "users can comment" on public.comments;
+create policy "users can comment"
+  on public.comments for insert with check (auth.uid() = user_id);
+
+drop policy if exists "users can delete their own comments" on public.comments;
+create policy "users can delete their own comments"
+  on public.comments for delete using (auth.uid() = user_id);
+
+-- Live comments. Wrapped so re-running the script doesn't error if already added.
+do $$
+begin
+  alter publication supabase_realtime add table public.comments;
+exception when duplicate_object then null;
+end $$;

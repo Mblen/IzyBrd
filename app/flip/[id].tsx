@@ -21,6 +21,8 @@ import { addOffer } from '../../lib/offers';
 import { getFlip, DEFAULT_FLIP_IMAGE } from '../../lib/flips';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
+import { getCommentCount, subscribeComments } from '../../lib/comments';
+import CommentsSheet from '../../components/CommentsSheet';
 
 type FlipView = {
   seller: string; rating: number; reviews: number;
@@ -77,6 +79,18 @@ export default function FlipDetailScreen() {
   const [offerSent, setOfferSent] = useState(false);
   const [offerSending, setOfferSending] = useState(false);
   const [offerError, setOfferError] = useState<string | null>(null);
+  const [showComments, setShowComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
+
+  // Keep the comment count live for this flip.
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    const refresh = () => getCommentCount(id).then(c => { if (active) setCommentCount(c); }).catch(() => {});
+    refresh();
+    const unsub = subscribeComments(id, refresh);
+    return () => { active = false; unsub(); };
+  }, [id]);
 
   useEffect(() => {
     if (mock || !id || !isSupabaseConfigured) return;
@@ -232,6 +246,18 @@ export default function FlipDetailScreen() {
               <Text style={s.detailValue}>{value}</Text>
             </View>
           ))}
+
+          {/* Comments */}
+          <Text style={s.sectionHeader}>Comments</Text>
+          <TouchableOpacity style={s.commentsRow} activeOpacity={0.7} onPress={() => setShowComments(true)}>
+            <Ionicons name="chatbubble-ellipses-outline" size={18} color="#fff" />
+            <Text style={s.commentsText}>
+              {commentCount > 0
+                ? `View all ${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}`
+                : 'Be the first to comment'}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#666" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -259,6 +285,14 @@ export default function FlipDetailScreen() {
           </View>
         )}
       </SafeAreaView>
+
+      {/* Comments sheet */}
+      <CommentsSheet
+        flipId={id ?? ''}
+        visible={showComments}
+        onClose={() => setShowComments(false)}
+        onCountChange={setCommentCount}
+      />
 
       {/* Make-offer modal */}
       <Modal
@@ -437,6 +471,18 @@ const s = StyleSheet.create({
   },
   detailLabel: { fontSize: 13, color: '#888' },
   detailValue: { fontSize: 13, fontWeight: '600', color: '#fff' },
+
+  commentsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#161616',
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  commentsText: { fontSize: 13, color: '#ddd', fontWeight: '500' },
 
   bottomBarWrap: {
     position: 'absolute',
