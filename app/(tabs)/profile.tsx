@@ -22,7 +22,10 @@ const DEFAULT_IMG = 'https://gjbsvgxypiwgmjpsdsqe.supabase.co/storage/v1/object/
 
 export default function ProfileScreen() {
   const { width: winW } = useWindowDimensions();
-  const cell = (winW - 4) / 3; // responsive 3-column grid
+  // Cap the column at a phone width so the page stays phone-shaped (and the
+  // grid cells stay small) when opened in a wide desktop browser.
+  const colW = Math.min(winW, 480);
+  const cell = (colW - 4) / 3; // responsive 3-column grid
   const [activeTab, setActiveTab] = useState(0);
   const [promoVisible, setPromoVisible] = useState(true);
 
@@ -72,7 +75,11 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[3]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[3]}
+        contentContainerStyle={{ width: '100%', maxWidth: 480, alignSelf: 'center' }}
+      >
 
         {/* Top bar */}
         <View style={s.topBar}>

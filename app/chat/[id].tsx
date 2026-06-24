@@ -245,7 +245,7 @@ const s = StyleSheet.create({
   headerAvatarTxt: { color: '#000', fontSize: 12, fontWeight: '700' },
   headerName: { fontSize: 15, fontWeight: '700', color: '#fff' },
 
-  list: { padding: 16, gap: 10, flexGrow: 1 },
+  list: { padding: 16, gap: 10, flexGrow: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
   msgRow: { flexDirection: 'row', justifyContent: 'flex-start' },
   msgRowMe: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '78%', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
@@ -298,6 +298,9 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: '#1e1e1e',
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   input: {
     flex: 1,

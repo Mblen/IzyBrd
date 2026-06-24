@@ -62,6 +62,8 @@ const FLIPS: Record<string, FlipView> = {
 
 export default function FlipDetailScreen() {
   const { width: winW } = useWindowDimensions();
+  // Cap at a phone width so the page stays phone-shaped on a wide desktop browser.
+  const colW = Math.min(winW, 480);
   const { id } = useLocalSearchParams<{ id: string }>();
   // Seeded feed flips ('1'-'5') come from mock data; anything else is a real
   // flip loaded from the database.
@@ -147,9 +149,12 @@ export default function FlipDetailScreen() {
 
   return (
     <View style={s.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[s.scroll, { width: '100%', maxWidth: 480, alignSelf: 'center' }]}
+      >
         {/* Hero image with back + heart overlays */}
-        <View style={[s.imageWrap, { width: winW, height: winW * 1.15 }]}>
+        <View style={[s.imageWrap, { width: colW, height: colW * 1.15 }]}>
           <Image source={{ uri: flip.image || DEFAULT_FLIP_IMAGE }} style={s.image} resizeMode="cover" />
           <SafeAreaView style={s.imageOverlay} edges={['top']} pointerEvents="box-none">
             <TouchableOpacity style={s.overlayBtn} onPress={() => router.back()}>
@@ -447,6 +452,9 @@ const s = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   offerBtn: {
     flex: 1,

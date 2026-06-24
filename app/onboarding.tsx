@@ -221,7 +221,7 @@ const s = StyleSheet.create({
   progressDot: { width: 24, height: 3, borderRadius: 2, backgroundColor: '#2a2a2a' },
   progressDotOn: { backgroundColor: '#fff' },
 
-  body: { flex: 1, paddingHorizontal: 24 },
+  body: { flex: 1, paddingHorizontal: 24, width: '100%', maxWidth: 480, alignSelf: 'center' },
 
   // Welcome
   welcomeCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
@@ -257,7 +257,7 @@ const s = StyleSheet.create({
   summaryCollege: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
 
   // Bottom
-  bottom: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8, gap: 14, alignItems: 'center' },
+  bottom: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8, gap: 14, alignItems: 'center', width: '100%', maxWidth: 480, alignSelf: 'center' },
   cta: { backgroundColor: '#fff', borderRadius: 28, paddingVertical: 16, alignItems: 'center', alignSelf: 'stretch' },
   ctaOff: { backgroundColor: '#333' },
   ctaTxt: { fontSize: 15, fontWeight: '800', color: '#000', letterSpacing: 0.2 },

@@ -165,7 +165,7 @@ export default function AuthScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
   flex: { flex: 1 },
-  body: { flex: 1, paddingHorizontal: 28, justifyContent: 'center', gap: 14 },
+  body: { flex: 1, paddingHorizontal: 28, justifyContent: 'center', gap: 14, width: '100%', maxWidth: 480, alignSelf: 'center' },
 
   logo: { fontSize: 40, fontWeight: '800', color: '#fff', letterSpacing: -1.2, textAlign: 'center' },
   tagline: { fontSize: 15, color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginBottom: 8 },

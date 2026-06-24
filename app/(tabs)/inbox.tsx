@@ -152,7 +152,10 @@ export default function InboxScreen() {
       </ScrollView>
 
       {/* List */}
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ width: '100%', maxWidth: 480, alignSelf: 'center' }}
+      >
         {list.length === 0 && (
           <View style={s.empty}>
             <Ionicons name="mail-open-outline" size={36} color="#ccc" />

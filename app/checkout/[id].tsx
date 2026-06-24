@@ -227,7 +227,7 @@ const s = StyleSheet.create({
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
 
-  scroll: { padding: 18, paddingBottom: 24 },
+  scroll: { padding: 18, paddingBottom: 24, width: '100%', maxWidth: 480, alignSelf: 'center' },
 
   itemRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   itemImg: { width: 72, height: 72, borderRadius: 10, backgroundColor: '#161616' },

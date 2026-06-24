@@ -52,7 +52,10 @@ const CATEGORIES = [
 export default function DiscoverScreen() {
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ width: '100%', maxWidth: 480, alignSelf: 'center' }}
+      >
 
         {/* Search bar */}
         <TouchableOpacity

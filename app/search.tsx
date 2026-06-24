@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, TextInput, Dimensions, Image,
+  StyleSheet, TextInput, useWindowDimensions, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -11,7 +11,6 @@ import { isSupabaseConfigured } from '../lib/supabase';
 
 type ResultItem = { id: string; title: string; price: number; color: string; image: string };
 
-const { width: W } = Dimensions.get('window');
 
 const RECENT = ['vintage champion', 'brooklyn crew', 'nike hoodie', 'compton zip'];
 const TRENDING = ['essentials hoodie', 'college drop', 'arcteryx fleece', 'vintage crew', 'LA pieces'];
@@ -25,9 +24,12 @@ const RESULTS = [
   { id: '6', title: 'Compton Hood', price: 60, color: '#111827', image: 'https://images.unsplash.com/photo-1564557287817-3785e38ec1f5?w=400&q=80' },
 ];
 
-const CARD_W = (W - 48) / 2;
-
 export default function SearchScreen() {
+  // Cap at a phone width so the page stays phone-shaped on a wide desktop browser.
+  const { width: winW } = useWindowDimensions();
+  const colW = Math.min(winW, 480);
+  const CARD_W = (colW - 48) / 2;
+  const priceW = (colW - 52) / 2;
   const [query, setQuery] = useState('');
   const [recent, setRecent] = useState(RECENT);
 
@@ -88,7 +90,11 @@ export default function SearchScreen() {
       </View>
 
       {!showResults ? (
-        <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={s.scroll}
+          contentContainerStyle={{ width: '100%', maxWidth: 480, alignSelf: 'center' }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Recent */}
           <View style={s.section}>
             <View style={s.sectionHeader}>
@@ -125,7 +131,7 @@ export default function SearchScreen() {
             <Text style={s.sectionTitle}>Shop by price</Text>
             <View style={s.priceGrid}>
               {['Under $20', 'Under $40', 'Under $75', '$100+'].map(p => (
-                <TouchableOpacity key={p} style={s.priceCard} activeOpacity={0.8}>
+                <TouchableOpacity key={p} style={[s.priceCard, { width: priceW }]} activeOpacity={0.8}>
                   <Text style={s.priceCardText}>{p}</Text>
                 </TouchableOpacity>
               ))}
@@ -133,7 +139,7 @@ export default function SearchScreen() {
           </View>
         </ScrollView>
       ) : (
-        <ScrollView contentContainerStyle={s.resultsGrid} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[s.resultsGrid, { width: '100%', maxWidth: 480, alignSelf: 'center' }]} showsVerticalScrollIndicator={false}>
           {filtered.length === 0 ? (
             <View style={s.noResults}>
               <Text style={s.noResultsText}>No flips found for "{query}"</Text>
@@ -185,7 +191,7 @@ const s = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#1e1e1e', marginHorizontal: 16 },
 
   priceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
-  priceCard: { width: (W - 52) / 2, backgroundColor: '#1e1e1e', borderRadius: 10, paddingVertical: 18, alignItems: 'center' },
+  priceCard: { backgroundColor: '#1e1e1e', borderRadius: 10, paddingVertical: 18, alignItems: 'center' },
   priceCardText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 
   resultsGrid: { padding: 16 },

@@ -74,7 +74,9 @@ const TABS = ['Shop', 'Sold', 'Likes'];
 
 export default function UserProfileScreen() {
   const { width: winW } = useWindowDimensions();
-  const cell = (winW - 4) / 3; // responsive 3-column grid
+  // Cap at a phone width so the page stays phone-shaped on a wide desktop browser.
+  const colW = Math.min(winW, 480);
+  const cell = (colW - 4) / 3; // responsive 3-column grid
   const { id } = useLocalSearchParams<{ id: string }>();
   const username = (id ?? '').replace('@', '');
   const mockSeller = SELLERS[username];
@@ -156,7 +158,10 @@ export default function UserProfileScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ width: '100%', maxWidth: 480, alignSelf: 'center' }}
+      >
         {/* Top bar */}
         <View style={s.topBar}>
           <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>

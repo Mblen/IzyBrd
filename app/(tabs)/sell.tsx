@@ -415,6 +415,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
 
   // Photos

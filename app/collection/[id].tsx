@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, Dimensions,
+  StyleSheet, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
-const { width: W } = Dimensions.get('window');
-const CELL = (W - 4) / 3;
 
 const COLLECTIONS_DATA: Record<string, {
   id: string; name: string; description: string; color: string; flips: { id: string; title: string; price: number; color: string }[]
@@ -50,6 +47,10 @@ const COLLECTIONS_DATA: Record<string, {
 };
 
 export default function CollectionDetail() {
+  // Cap at a phone width so the page stays phone-shaped on a wide desktop browser.
+  const { width: winW } = useWindowDimensions();
+  const colW = Math.min(winW, 480);
+  const CELL = (colW - 4) / 3;
   const { id } = useLocalSearchParams<{ id: string }>();
   const [sort, setSort] = useState('Recent');
   const col = COLLECTIONS_DATA[id as string] ?? COLLECTIONS_DATA['nyc'];
@@ -83,12 +84,15 @@ export default function CollectionDetail() {
       </View>
 
       {/* 3-col grid */}
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ width: '100%', maxWidth: 480, alignSelf: 'center' }}
+      >
         <View style={s.grid}>
           {flips.map(item => (
             <TouchableOpacity
               key={item.id}
-              style={[s.cell, { backgroundColor: item.color }]}
+              style={[s.cell, { width: CELL, height: CELL, backgroundColor: item.color }]}
               activeOpacity={0.85}
               onPress={() => router.push(`/flip/${item.id}` as any)}
             >
@@ -118,7 +122,7 @@ const s = StyleSheet.create({
   sortBtn: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 },
   sortBtnTxt: { color: 'rgba(255,255,255,0.6)', fontSize: 13 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, padding: 2 },
-  cell: { width: CELL, height: CELL },
+  cell: {},
   cellFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 7, backgroundColor: 'rgba(0,0,0,0.5)' },
   cellTitle: { fontSize: 10, color: '#fff', fontWeight: '600' },
   cellPrice: { fontSize: 11, color: '#fff', fontWeight: '800' },
