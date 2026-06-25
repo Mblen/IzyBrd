@@ -28,28 +28,32 @@ export type NewOrder = {
   total: number;
 };
 
-export async function createOrder(input: NewOrder): Promise<void> {
+// Returns the new order's id (a real UUID for real flips, a local id otherwise)
+// so the caller can offer a review of the seller right after checkout.
+export async function createOrder(input: NewOrder): Promise<string> {
   if (isRealFlipId(input.flipId) && input.sellerId) {
     const { data: auth } = await supabase.auth.getUser();
     const buyerId = auth.user?.id;
     if (!buyerId) throw new Error('You must be signed in to buy.');
-    const { error } = await supabase.from('orders').insert({
+    const { data, error } = await supabase.from('orders').insert({
       flip_id: input.flipId,
       buyer_id: buyerId,
       seller_id: input.sellerId,
       total: input.total,
-    });
+    }).select('id').single();
     if (error) throw error;
     // The flip is marked 'sold' by the on_order_created DB trigger (server-side,
     // so the buyer doesn't need write access to the seller's flip).
-    return;
+    return (data as { id: string }).id;
   }
 
+  const localId = `order-${Date.now()}`;
   localOrders = [
-    { id: `order-${Date.now()}`, flipId: input.flipId, flipTitle: input.flipTitle, seller: input.seller, total: input.total, time: 'now' },
+    { id: localId, flipId: input.flipId, flipTitle: input.flipTitle, seller: input.seller, total: input.total, time: 'now' },
     ...localOrders,
   ];
   listeners.forEach(l => l());
+  return localId;
 }
 
 // Orders the signed-in user has placed (DB) plus any seeded-flip purchases.

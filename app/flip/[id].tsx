@@ -22,6 +22,7 @@ import { getFlip, DEFAULT_FLIP_IMAGE } from '../../lib/flips';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
 import { getCommentCount, subscribeComments } from '../../lib/comments';
+import { getSellerRating, SellerRating } from '../../lib/reviews';
 import CommentsSheet from '../../components/CommentsSheet';
 
 type FlipView = {
@@ -81,6 +82,7 @@ export default function FlipDetailScreen() {
   const [offerError, setOfferError] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
+  const [sellerRating, setSellerRating] = useState<SellerRating | null>(null);
 
   // Keep the comment count live for this flip.
   useEffect(() => {
@@ -122,6 +124,18 @@ export default function FlipDetailScreen() {
 
   const flip = mock ?? dbFlip ?? FLIPS['1'];
   const total = flip.price + SHIPPING;
+
+  // Real sellers show live ratings; seeded mock flips keep their dressing.
+  useEffect(() => {
+    if (!flip.sellerId) return;
+    let active = true;
+    getSellerRating(flip.sellerId).then(r => { if (active) setSellerRating(r); }).catch(() => {});
+    return () => { active = false; };
+  }, [flip.sellerId]);
+
+  const hasRealSeller = !!flip.sellerId;
+  const ratingValue = hasRealSeller ? (sellerRating?.avg ?? 0) : flip.rating;
+  const reviewCount = hasRealSeller ? (sellerRating?.count ?? 0) : flip.reviews;
 
   const localSold = useSyncExternalStore(subscribeLocalOrders, () => isLocalSold(id ?? ''), () => isLocalSold(id ?? ''));
   const sold = flip.status === 'sold' || localSold;
@@ -214,12 +228,21 @@ export default function FlipDetailScreen() {
               </View>
               <View>
                 <Text style={s.sellerName}>{flip.seller}</Text>
-                <View style={s.ratingRow}>
-                  <Ionicons name="star" size={11} color="#fff" />
-                  <Text style={s.ratingText}>
-                    {flip.rating.toFixed(1)} · {flip.reviews} reviews
-                  </Text>
-                </View>
+                {reviewCount > 0 ? (
+                  <View style={s.ratingRow}>
+                    <Ionicons name="star" size={11} color="#ffd24a" />
+                    <Text style={s.ratingText}>
+                      {ratingValue.toFixed(1)} · {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={s.ratingRow}>
+                    <Ionicons name="star-outline" size={11} color="rgba(255,255,255,0.6)" />
+                    <Text style={s.ratingText}>
+                      {hasRealSeller ? 'New seller' : 'No reviews yet'}
+                    </Text>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
             <TouchableOpacity

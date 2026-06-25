@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  TextInput,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +14,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { createOrder } from '../../lib/orders';
 import { getFlip } from '../../lib/flips';
+import { isRealFlipId } from '../../lib/ids';
+import { addReview } from '../../lib/reviews';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 const SHIPPING = 5;
@@ -35,6 +38,13 @@ export default function CheckoutScreen() {
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+
+  // Post-purchase review of the seller
+  const [rating, setRating] = useState(0);
+  const [reviewBody, setReviewBody] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewDone, setReviewDone] = useState(false);
 
   useEffect(() => {
     if (mock || !id || !isSupabaseConfigured) return;
@@ -65,13 +75,14 @@ export default function CheckoutScreen() {
     setError(null);
     setPlacing(true);
     try {
-      await createOrder({
+      const newId = await createOrder({
         flipId: id ?? '1',
         flipTitle: flip.title,
         seller: flip.seller,
         sellerId: flip.sellerId,
         total,
       });
+      setOrderId(newId);
       setPlaced(true);
     } catch (e: any) {
       setError(e?.message ?? 'Could not complete your purchase. Try again.');
@@ -88,10 +99,25 @@ export default function CheckoutScreen() {
     );
   }
 
+  const canReview = isRealFlipId(id ?? '') && !!flip.sellerId && !!orderId;
+
+  const submitReview = async () => {
+    if (!orderId || !flip.sellerId || rating === 0 || reviewSubmitting) return;
+    setReviewSubmitting(true);
+    try {
+      await addReview(orderId, flip.sellerId, rating, reviewBody);
+      setReviewDone(true);
+    } catch {
+      // Leave the widget up so they can retry
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   if (placed) {
     return (
       <SafeAreaView style={s.container} edges={['top', 'bottom']}>
-        <View style={s.successWrap}>
+        <ScrollView contentContainerStyle={s.successWrap} showsVerticalScrollIndicator={false}>
           <View style={s.successCircle}>
             <Ionicons name="checkmark" size={44} color="#000" />
           </View>
@@ -104,6 +130,53 @@ export default function CheckoutScreen() {
             <Text style={s.successCardTitle}>{flip.title}</Text>
             <Text style={s.successCardMeta}>Sold by {flip.seller} · ${total} total</Text>
           </View>
+
+          {/* Rate the seller */}
+          {canReview && (reviewDone ? (
+            <View style={s.reviewDoneCard}>
+              <Ionicons name="checkmark-circle" size={20} color="#fff" />
+              <Text style={s.reviewDoneTxt}>Thanks for rating {flip.seller}!</Text>
+            </View>
+          ) : (
+            <View style={s.reviewCard}>
+              <Text style={s.reviewTitle}>Rate your purchase</Text>
+              <Text style={s.reviewSub}>How was buying from {flip.seller}?</Text>
+              <View style={s.starsRow}>
+                {[1, 2, 3, 4, 5].map(n => (
+                  <TouchableOpacity
+                    key={n}
+                    onPress={() => setRating(n)}
+                    hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={n <= rating ? 'star' : 'star-outline'}
+                      size={32}
+                      color={n <= rating ? '#ffd24a' : '#555'}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={s.reviewInput}
+                placeholder="Add a note (optional)"
+                placeholderTextColor="#777"
+                value={reviewBody}
+                onChangeText={setReviewBody}
+                multiline
+                maxLength={300}
+              />
+              <TouchableOpacity
+                style={[s.reviewBtn, (rating === 0 || reviewSubmitting) && s.reviewBtnOff]}
+                onPress={submitReview}
+                disabled={rating === 0 || reviewSubmitting}
+                activeOpacity={0.85}
+              >
+                <Text style={s.reviewBtnTxt}>{reviewSubmitting ? 'Submitting…' : 'Submit review'}</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+
           <TouchableOpacity
             style={s.successBtn}
             activeOpacity={0.85}
@@ -114,7 +187,7 @@ export default function CheckoutScreen() {
           <TouchableOpacity onPress={() => { router.dismissAll(); router.push('/(tabs)/inbox' as any); }}>
             <Text style={s.successLink}>View in Inbox</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -273,7 +346,18 @@ const s = StyleSheet.create({
   payError: { fontSize: 13, color: '#ff6b6b', textAlign: 'center', marginBottom: 10 },
 
   // Success state
-  successWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 12 },
+  successWrap: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, paddingVertical: 24, gap: 12, width: '100%', maxWidth: 480, alignSelf: 'center' },
+
+  reviewCard: { alignSelf: 'stretch', borderWidth: 1.5, borderColor: '#222', borderRadius: 16, padding: 16, gap: 10, marginTop: 4, backgroundColor: '#161616', alignItems: 'center' },
+  reviewTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  reviewSub: { fontSize: 13, color: '#999', textAlign: 'center' },
+  starsRow: { flexDirection: 'row', gap: 6, marginVertical: 2 },
+  reviewInput: { alignSelf: 'stretch', backgroundColor: '#1f1f1f', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, color: '#fff', fontSize: 14, minHeight: 44, maxHeight: 110 },
+  reviewBtn: { alignSelf: 'stretch', backgroundColor: '#fff', borderRadius: 24, paddingVertical: 12, alignItems: 'center' },
+  reviewBtnOff: { backgroundColor: '#333' },
+  reviewBtnTxt: { fontSize: 14, fontWeight: '800', color: '#000' },
+  reviewDoneCard: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, padding: 16, marginTop: 4, backgroundColor: '#161616', borderWidth: 1.5, borderColor: '#222' },
+  reviewDoneTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
   successCircle: {
     width: 84,
     height: 84,

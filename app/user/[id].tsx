@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getProfileByUsername } from '../../lib/profile';
 import { getFlipsBySeller } from '../../lib/flips';
 import { getFollowCounts, isFollowing, follow, unfollow } from '../../lib/follows';
+import { getSellerRating, getSellerReviews, Review, SellerRating } from '../../lib/reviews';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 type SellerView = {
@@ -70,7 +71,8 @@ const SELLERS: Record<string, SellerView> = {
   },
 };
 
-const TABS = ['Shop', 'Sold', 'Likes'];
+const TABS = ['Shop', 'Sold', 'Likes', 'Reviews'];
+const REVIEWS_TAB = 3;
 
 export default function UserProfileScreen() {
   const { width: winW } = useWindowDimensions();
@@ -87,6 +89,8 @@ export default function UserProfileScreen() {
   const [sellerId, setSellerId] = useState<string | null>(null);
   const [counts, setCounts] = useState<{ followers: number; following: number } | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
+  const [sellerRating, setSellerRating] = useState<SellerRating | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     if (mockSeller || !username || !isSupabaseConfigured) return;
@@ -96,14 +100,18 @@ export default function UserProfileScreen() {
       if (!active) return;
       if (profile) {
         setSellerId(profile.id);
-        const [flips, followCounts, amFollowing] = await Promise.all([
+        const [flips, followCounts, amFollowing, rating, sellerReviews] = await Promise.all([
           getFlipsBySeller(profile.id),
           getFollowCounts(profile.id),
           isFollowing(profile.id),
+          getSellerRating(profile.id),
+          getSellerReviews(profile.id),
         ]);
         if (!active) return;
         setCounts(followCounts);
         setFollowing(amFollowing);
+        setSellerRating(rating);
+        setReviews(sellerReviews);
         setDbSeller({
           handle: `@${profile.username ?? username}`,
           name: profile.full_name || profile.username || username,
@@ -125,6 +133,9 @@ export default function UserProfileScreen() {
   // Real seller when found; otherwise the seeded mock (or a safe default)
   const seller: SellerView = mockSeller ?? dbSeller ?? SELLERS['christybb'];
   const followerCount = counts ? counts.followers : seller.followers;
+  // Real sellers use live review data; seeded mock sellers keep their dressing.
+  const ratingValue = sellerId ? (sellerRating?.avg ?? 0) : seller.rating;
+  const reviewCount = sellerId ? (sellerRating?.count ?? 0) : seller.reviews;
 
   const toggleFollow = async () => {
     // Seeded mock sellers keep the simple local toggle
@@ -189,7 +200,7 @@ export default function UserProfileScreen() {
             <Text style={s.statLabel}>Following</Text>
           </View>
           <View style={s.statBlock}>
-            <Text style={s.statNum}>{seller.reviews}</Text>
+            <Text style={s.statNum}>{reviewCount}</Text>
             <Text style={s.statLabel}>Reviews</Text>
           </View>
         </View>
@@ -203,10 +214,15 @@ export default function UserProfileScreen() {
               <Text style={s.metaTxt}>{seller.college}</Text>
             </View>
           ) : null}
-          {seller.reviews > 0 ? (
+          {reviewCount > 0 ? (
             <View style={s.metaRow}>
-              <Ionicons name="star" size={12} color="#fff" />
-              <Text style={s.metaTxt}>{seller.rating.toFixed(1)} · {seller.reviews} reviews</Text>
+              <Ionicons name="star" size={12} color="#ffd24a" />
+              <Text style={s.metaTxt}>{ratingValue.toFixed(1)} · {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}</Text>
+            </View>
+          ) : sellerId ? (
+            <View style={s.metaRow}>
+              <Ionicons name="star-outline" size={12} color="rgba(255,255,255,0.6)" />
+              <Text style={s.metaTxt}>New seller · no reviews yet</Text>
             </View>
           ) : null}
           {seller.bio ? <Text style={s.bio}>{seller.bio}</Text> : null}
@@ -252,8 +268,42 @@ export default function UserProfileScreen() {
           ))}
         </View>
 
-        {/* Grid */}
-        {data.length > 0 ? (
+        {/* Reviews list */}
+        {activeTab === REVIEWS_TAB ? (
+          reviews.length > 0 ? (
+            <View style={s.reviewsList}>
+              {reviews.map(r => (
+                <View key={r.id} style={s.reviewRow}>
+                  <View style={s.reviewAvatar}>
+                    <Text style={s.reviewAvatarTxt}>{(r.reviewer || '?').charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <View style={s.reviewBody}>
+                    <View style={s.reviewHead}>
+                      <Text style={s.reviewUser}>@{r.reviewer}</Text>
+                      <Text style={s.reviewTime}>{r.time}</Text>
+                    </View>
+                    <View style={s.reviewStars}>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <Ionicons
+                          key={n}
+                          name={n <= r.rating ? 'star' : 'star-outline'}
+                          size={12}
+                          color={n <= r.rating ? '#ffd24a' : '#555'}
+                        />
+                      ))}
+                    </View>
+                    {r.body ? <Text style={s.reviewText}>{r.body}</Text> : null}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={s.empty}>
+              <Ionicons name="star-outline" size={36} color="#444" />
+              <Text style={s.emptyTxt}>No reviews yet</Text>
+            </View>
+          )
+        ) : data.length > 0 ? (
           <View style={s.grid}>
             {data.map(item => (
               <TouchableOpacity
@@ -329,4 +379,15 @@ const s = StyleSheet.create({
 
   empty: { alignItems: 'center', paddingVertical: 60, gap: 10 },
   emptyTxt: { fontSize: 14, color: '#555' },
+
+  reviewsList: { paddingHorizontal: 16, paddingTop: 6 },
+  reviewRow: { flexDirection: 'row', gap: 10, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#1a1a1a' },
+  reviewAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' },
+  reviewAvatarTxt: { fontSize: 14, fontWeight: '700', color: '#eee' },
+  reviewBody: { flex: 1, gap: 4 },
+  reviewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  reviewUser: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  reviewTime: { fontSize: 11, color: '#777' },
+  reviewStars: { flexDirection: 'row', gap: 2 },
+  reviewText: { fontSize: 13, color: '#ccc', lineHeight: 18, marginTop: 2 },
 });

@@ -331,3 +331,37 @@ begin
   alter publication supabase_realtime add table public.comments;
 exception when duplicate_object then null;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- reviews: a buyer's rating of a seller after a purchase (one per order)
+-- ---------------------------------------------------------------------------
+create table if not exists public.reviews (
+  id          uuid primary key default gen_random_uuid(),
+  order_id    uuid not null references public.orders (id) on delete cascade,
+  seller_id   uuid not null references public.profiles (id) on delete cascade,
+  reviewer_id uuid not null references public.profiles (id) on delete cascade,
+  rating      integer not null check (rating between 1 and 5),
+  body        text,
+  created_at  timestamptz not null default now(),
+  unique (order_id)
+);
+create index if not exists reviews_seller_idx on public.reviews (seller_id, created_at);
+alter table public.reviews enable row level security;
+
+-- Ratings are public trust signals: anyone can read them.
+drop policy if exists "reviews are viewable by everyone" on public.reviews;
+create policy "reviews are viewable by everyone"
+  on public.reviews for select using (true);
+
+-- Only the actual buyer of the order can leave its review, and not for themselves.
+drop policy if exists "buyers can review their orders" on public.reviews;
+create policy "buyers can review their orders"
+  on public.reviews for insert with check (
+    auth.uid() = reviews.reviewer_id
+    and exists (
+      select 1 from public.orders o
+      where o.id = reviews.order_id
+        and o.buyer_id = auth.uid()
+        and o.seller_id = reviews.seller_id
+    )
+  );
