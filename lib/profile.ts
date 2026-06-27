@@ -36,11 +36,36 @@ export async function getMyProfile(): Promise<Profile | null> {
 }
 
 export async function updateMyProfile(
-  fields: Partial<Pick<Profile, 'username' | 'full_name' | 'college' | 'major' | 'city' | 'bio'>>
+  fields: Partial<Pick<Profile, 'username' | 'full_name' | 'college' | 'major' | 'city' | 'bio' | 'avatar_url'>>
 ): Promise<void> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return;
-  await supabase.from('profiles').update(fields).eq('id', auth.user.id);
+  const { error } = await supabase.from('profiles').update(fields).eq('id', auth.user.id);
+  if (error) throw error;
+}
+
+// Upload a picked avatar photo to the flip-photos bucket and return its public
+// URL. Returns null if there is no photo or the upload fails.
+export async function uploadAvatar(uri: string): Promise<string | null> {
+  if (!uri) return null;
+  const { data: auth } = await supabase.auth.getUser();
+  const userId = auth.user?.id;
+  if (!userId) return null;
+  try {
+    const resp = await fetch(uri);
+    const arrayBuffer = await resp.arrayBuffer();
+    const contentType = resp.headers.get('content-type') ?? 'image/jpeg';
+    const ext = contentType.split('/')[1]?.split('+')[0] ?? 'jpg';
+    const path = `avatars/${userId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from('flip-photos')
+      .upload(path, arrayBuffer, { contentType, upsert: false });
+    if (error) throw error;
+    return supabase.storage.from('flip-photos').getPublicUrl(path).data.publicUrl;
+  } catch (e) {
+    console.warn('Avatar upload failed.', e);
+    return null;
+  }
 }
 
 export async function signOut(): Promise<void> {

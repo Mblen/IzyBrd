@@ -91,9 +91,13 @@ export default function ProfileScreen() {
         {/* Avatar + stats */}
         <View style={s.statsRow}>
           <View style={s.avatarWrap}>
-            <View style={s.avatar}>
-              <Text style={s.avatarTxt}>{avatarInitials}</Text>
-            </View>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={s.avatar} />
+            ) : (
+              <View style={s.avatar}>
+                <Text style={s.avatarTxt}>{avatarInitials}</Text>
+              </View>
+            )}
           </View>
           <View style={s.statBlock}>
             <Text style={s.statNum}>{counts ? counts.followers : '—'}</Text>
@@ -126,11 +130,11 @@ export default function ProfileScreen() {
 
         {/* Action buttons */}
         <View style={s.actionsRow}>
-          <TouchableOpacity style={s.actionBtn}>
-            <Text style={s.actionTxt}>Shop Stats</Text>
+          <TouchableOpacity style={s.actionBtn} activeOpacity={0.85} onPress={() => router.push('/edit-profile' as any)}>
+            <Text style={s.actionTxt}>Edit Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[s.actionBtn, s.actionBtnAlt]}>
-            <Text style={[s.actionTxt, s.actionTxtAlt]}>Track profile</Text>
+            <Text style={[s.actionTxt, s.actionTxtAlt]}>Shop Stats</Text>
           </TouchableOpacity>
         </View>
 

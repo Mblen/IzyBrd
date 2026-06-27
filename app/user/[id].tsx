@@ -15,6 +15,7 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 type SellerView = {
   handle: string; name: string; rating: number; reviews: number;
   followers: number; following: number; college: string; city: string; bio: string;
+  avatarUrl?: string | null;
   flips: { id: string; title: string; price: number; color: string; image?: string }[];
 };
 
@@ -122,6 +123,7 @@ export default function UserProfileScreen() {
           college: profile.college || '',
           city: profile.city || '',
           bio: profile.bio || '',
+          avatarUrl: profile.avatar_url,
           flips: flips.map(f => ({ id: f.id, title: f.title, price: f.price, color: '#1a1a1a', image: f.image_url ?? '' })),
         });
       }
@@ -186,11 +188,15 @@ export default function UserProfileScreen() {
 
         {/* Avatar + stats */}
         <View style={s.statsRow}>
-          <View style={s.avatar}>
-            <Text style={s.avatarTxt}>
-              {seller.name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()}
-            </Text>
-          </View>
+          {seller.avatarUrl ? (
+            <Image source={{ uri: seller.avatarUrl }} style={s.avatar} />
+          ) : (
+            <View style={s.avatar}>
+              <Text style={s.avatarTxt}>
+                {seller.name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View style={s.statBlock}>
             <Text style={s.statNum}>{followerCount}</Text>
             <Text style={s.statLabel}>Followers</Text>
