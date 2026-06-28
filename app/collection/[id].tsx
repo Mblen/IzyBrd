@@ -63,6 +63,7 @@ export default function CollectionDetail() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
+      <View style={s.frame}>
       {/* Dark header banner */}
       <View style={[s.banner, { backgroundColor: col.color }]}>
         <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
@@ -105,12 +106,14 @@ export default function CollectionDetail() {
         </View>
         <View style={{ height: 40 }} />
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
+  frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
   banner: { padding: 16, paddingBottom: 20 },
   backBtn: { marginBottom: 12 },
   backArrow: { fontSize: 22, color: '#fff' },

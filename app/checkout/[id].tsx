@@ -194,6 +194,7 @@ export default function CheckoutScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
+      <View style={s.frame}>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.headerBtn} onPress={() => router.back()}>
@@ -280,12 +281,14 @@ export default function CheckoutScreen() {
           <Text style={s.payBtnTxt}>{placing ? 'Processing…' : `Buy the flip · $${total}`}</Text>
         </TouchableOpacity>
       </View>
+      </View>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
+  frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
   loadingWrap: { alignItems: 'center', justifyContent: 'center' },
 
   header: {

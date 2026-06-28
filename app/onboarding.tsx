@@ -215,7 +215,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
   flex: { flex: 1 },
 
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, width: '100%', maxWidth: 480, alignSelf: 'center' },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   progressRow: { flexDirection: 'row', gap: 6 },
   progressDot: { width: 24, height: 3, borderRadius: 2, backgroundColor: '#2a2a2a' },

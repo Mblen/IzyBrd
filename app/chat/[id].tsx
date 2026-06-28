@@ -146,6 +146,7 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
+      <View style={s.frame}>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.headerBtn} onPress={() => router.back()}>
@@ -215,12 +216,14 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
+  frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
   flex: { flex: 1 },
 
   header: {

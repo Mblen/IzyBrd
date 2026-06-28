@@ -107,6 +107,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
+      <View style={s.frame}>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.headerBtn} onPress={closeScreen}>
@@ -153,6 +154,7 @@ export default function EditProfileScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -186,6 +188,7 @@ function Field({
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
+  frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
   center: { alignItems: 'center', justifyContent: 'center' },
 
   header: {
