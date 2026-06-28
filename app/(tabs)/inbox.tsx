@@ -112,6 +112,7 @@ export default function InboxScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
+      <View style={s.frame}>
       {/* Header */}
       <View style={s.header}>
         <Text style={s.title}>Inbox</Text>
@@ -143,10 +144,7 @@ export default function InboxScreen() {
       </ScrollView>
 
       {/* List */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ width: '100%', maxWidth: 480, alignSelf: 'center' }}
-      >
+      <ScrollView showsVerticalScrollIndicator={false}>
         {list.length === 0 && (
           <View style={s.empty}>
             <Ionicons name="mail-open-outline" size={36} color="#ccc" />
@@ -187,12 +185,14 @@ export default function InboxScreen() {
         ))}
         <View style={{ height: 24 }} />
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
+  frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
   title: { fontSize: 26, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
   badge: { backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, minWidth: 20, alignItems: 'center' },

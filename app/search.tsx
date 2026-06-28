@@ -64,6 +64,7 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
+      <View style={s.frame}>
       {/* Search bar */}
       <View style={s.barRow}>
         <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
@@ -90,11 +91,7 @@ export default function SearchScreen() {
       </View>
 
       {!showResults ? (
-        <ScrollView
-          style={s.scroll}
-          contentContainerStyle={{ width: '100%', maxWidth: 480, alignSelf: 'center' }}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
           {/* Recent */}
           <View style={s.section}>
             <View style={s.sectionHeader}>
@@ -139,7 +136,7 @@ export default function SearchScreen() {
           </View>
         </ScrollView>
       ) : (
-        <ScrollView contentContainerStyle={[s.resultsGrid, { width: '100%', maxWidth: 480, alignSelf: 'center' }]} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={s.resultsGrid} showsVerticalScrollIndicator={false}>
           {filtered.length === 0 ? (
             <View style={s.noResults}>
               <Text style={s.noResultsText}>No flips found for "{query}"</Text>
@@ -164,12 +161,14 @@ export default function SearchScreen() {
           )}
         </ScrollView>
       )}
+      </View>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#111' },
+  frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
 
   barRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 10 },
   backBtn: { width: 36, alignItems: 'center' },

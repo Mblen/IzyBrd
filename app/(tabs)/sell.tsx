@@ -164,6 +164,7 @@ export default function SellScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.frame}>
 
       {/* Header */}
       <View style={styles.header}>
@@ -342,6 +343,7 @@ export default function SellScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -352,6 +354,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0a0a0a',
   },
+  frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
 
   // Header
   header: {
@@ -415,9 +418,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    width: '100%',
-    maxWidth: 480,
-    alignSelf: 'center',
   },
 
   // Photos
