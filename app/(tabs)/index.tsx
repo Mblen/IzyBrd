@@ -348,10 +348,11 @@ export default function HomeScreen() {
     listRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [dbFlips[0]?.id]);
 
-  // The Following feed shows only people you follow (no mock filler);
-  // every other tab appends the seed flips so it's never empty.
+  // The Following feed shows only people you follow. For You / Local show the
+  // real database flips; the seeded mock flips are only a fallback for when
+  // there are no real flips yet (so the feed is never empty in a fresh setup).
   const feedData: FeedItem[] =
-    activeTab === FOLLOWING_TAB ? dbFlips : [...dbFlips, ...FLIPS];
+    activeTab === FOLLOWING_TAB ? dbFlips : dbFlips.length > 0 ? dbFlips : FLIPS;
 
   return (
     <View style={styles.container}>
