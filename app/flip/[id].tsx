@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { addOffer } from '../../lib/offers';
 import { getFlip, DEFAULT_FLIP_IMAGE } from '../../lib/flips';
@@ -29,11 +30,30 @@ type FlipView = {
   seller: string; rating: number; reviews: number;
   style: string; size: string; condition: string;
   title: string; story: string; price: number; city: string; image: string;
+  video?: string;
   sellerId?: string; status?: 'active' | 'sold';
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SHIPPING = 5;
+
+// Muted looping clip for the hero; separate component so the player hook only
+// runs when the flip actually has a video.
+function HeroVideo({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, p => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+  return (
+    <VideoView
+      player={player}
+      style={{ width: '100%', height: '100%' }}
+      contentFit="cover"
+      nativeControls={false}
+    />
+  );
+}
 
 // Mock data — same flips as the home feed (all data is inline per project convention)
 const FLIPS: Record<string, FlipView> = {
@@ -113,6 +133,7 @@ export default function FlipDetailScreen() {
             price: f.price,
             city: f.city ?? '',
             image: f.image_url ?? '',
+            video: f.video_url ?? '',
             sellerId: f.seller_id,
             status: f.status,
           });
@@ -183,7 +204,11 @@ export default function FlipDetailScreen() {
       >
         {/* Hero image with back + heart overlays */}
         <View style={[s.imageWrap, { width: colW, height: colW * 1.15 }]}>
-          <Image source={{ uri: flip.image || DEFAULT_FLIP_IMAGE }} style={s.image} resizeMode="cover" />
+          {flip.video ? (
+            <HeroVideo uri={flip.video} />
+          ) : (
+            <Image source={{ uri: flip.image || DEFAULT_FLIP_IMAGE }} style={s.image} resizeMode="cover" />
+          )}
           <SafeAreaView style={s.imageOverlay} edges={['top']} pointerEvents="box-none">
             <TouchableOpacity style={s.overlayBtn} onPress={() => router.back()}>
               <Ionicons name="chevron-back" size={22} color="#000" />

@@ -365,3 +365,39 @@ create policy "buyers can review their orders"
         and o.seller_id = reviews.seller_id
     )
   );
+
+-- ---------------------------------------------------------------------------
+-- Video listings: an optional short clip on a flip, played in the feed
+-- ---------------------------------------------------------------------------
+alter table public.flips add column if not exists video_url text;
+
+-- ---------------------------------------------------------------------------
+-- wardrobe_items: your private closet - photos of clothes you own, which can
+-- be turned into listings with one tap ("Flip it"). Owner-only access.
+-- ---------------------------------------------------------------------------
+create table if not exists public.wardrobe_items (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references public.profiles (id) on delete cascade,
+  title       text,
+  style       text,
+  image_url   text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists wardrobe_user_idx on public.wardrobe_items (user_id, created_at);
+alter table public.wardrobe_items enable row level security;
+
+drop policy if exists "users can read their own wardrobe" on public.wardrobe_items;
+create policy "users can read their own wardrobe"
+  on public.wardrobe_items for select using (auth.uid() = user_id);
+
+drop policy if exists "users can add to their wardrobe" on public.wardrobe_items;
+create policy "users can add to their wardrobe"
+  on public.wardrobe_items for insert with check (auth.uid() = user_id);
+
+drop policy if exists "users can update their wardrobe" on public.wardrobe_items;
+create policy "users can update their wardrobe"
+  on public.wardrobe_items for update using (auth.uid() = user_id);
+
+drop policy if exists "users can remove from their wardrobe" on public.wardrobe_items;
+create policy "users can remove from their wardrobe"
+  on public.wardrobe_items for delete using (auth.uid() = user_id);

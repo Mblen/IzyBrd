@@ -20,6 +20,7 @@ export type DbFlip = {
   brand: string | null;
   city: string | null;
   image_url: string | null;
+  video_url?: string | null;
   status: 'active' | 'sold';
   created_at: string;
 };
@@ -34,18 +35,23 @@ export type NewFlip = {
   brand: string;
   city: string;
   imageUri: string; // local uri from the image picker, or '' if none
+  videoUri?: string; // optional short clip for the feed
 };
 
-// Upload a picked photo to the flip-photos bucket and return its public URL.
-// Degrades gracefully: returns null if there is no photo or the upload fails,
-// so creating a flip never hard-fails on the image.
-async function uploadPhoto(uri: string, userId: string): Promise<string | null> {
+// Upload picked media (photo or video) to the flip-photos bucket and return
+// its public URL. Degrades gracefully: returns null if there is no file or the
+// upload fails, so creating a flip never hard-fails on media.
+async function uploadMedia(
+  uri: string,
+  userId: string,
+  fallbackType: string
+): Promise<string | null> {
   if (!uri) return null;
   try {
     const resp = await fetch(uri);
     const arrayBuffer = await resp.arrayBuffer();
-    const contentType = resp.headers.get('content-type') ?? 'image/jpeg';
-    const ext = contentType.split('/')[1]?.split('+')[0] ?? 'jpg';
+    const contentType = resp.headers.get('content-type') ?? fallbackType;
+    const ext = contentType.split('/')[1]?.split('+')[0] ?? 'bin';
     const path = `${userId}/${Date.now()}.${ext}`;
     const { error } = await supabase.storage
       .from('flip-photos')
@@ -53,7 +59,7 @@ async function uploadPhoto(uri: string, userId: string): Promise<string | null> 
     if (error) throw error;
     return supabase.storage.from('flip-photos').getPublicUrl(path).data.publicUrl;
   } catch (e) {
-    console.warn('Photo upload failed, saving flip without an image.', e);
+    console.warn('Media upload failed, saving flip without it.', e);
     return null;
   }
 }
@@ -63,24 +69,32 @@ export async function createFlip(input: NewFlip): Promise<DbFlip> {
   const userId = auth.user?.id;
   if (!userId) throw new Error('You must be signed in to post a flip.');
 
-  const image_url = await uploadPhoto(input.imageUri, userId);
+  const [image_url, video_url] = await Promise.all([
+    uploadMedia(input.imageUri, userId, 'image/jpeg'),
+    uploadMedia(input.videoUri ?? '', userId, 'video/mp4'),
+  ]);
 
-  const { data, error } = await supabase
-    .from('flips')
-    .insert({
-      seller_id: userId,
-      title: input.title,
-      story: input.story,
-      price: input.price,
-      style: input.style,
-      size: input.size,
-      condition: input.condition,
-      brand: input.brand,
-      city: input.city,
-      image_url,
-    })
-    .select()
-    .single();
+  const row: Record<string, unknown> = {
+    seller_id: userId,
+    title: input.title,
+    story: input.story,
+    price: input.price,
+    style: input.style,
+    size: input.size,
+    condition: input.condition,
+    brand: input.brand,
+    city: input.city,
+    image_url,
+  };
+  if (video_url) row.video_url = video_url;
+
+  let { data, error } = await supabase.from('flips').insert(row).select().single();
+  // If the video_url column hasn't been added to the database yet, retry
+  // without it so posting still works.
+  if (error && video_url) {
+    delete row.video_url;
+    ({ data, error } = await supabase.from('flips').insert(row).select().single());
+  }
   if (error) throw error;
   return data as DbFlip;
 }

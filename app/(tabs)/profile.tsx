@@ -133,8 +133,8 @@ export default function ProfileScreen() {
           <TouchableOpacity style={s.actionBtn} activeOpacity={0.85} onPress={() => router.push('/edit-profile' as any)}>
             <Text style={s.actionTxt}>Edit Profile</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[s.actionBtn, s.actionBtnAlt]}>
-            <Text style={[s.actionTxt, s.actionTxtAlt]}>Shop Stats</Text>
+          <TouchableOpacity style={[s.actionBtn, s.actionBtnAlt]} activeOpacity={0.85} onPress={() => router.push('/wardrobe' as any)}>
+            <Text style={[s.actionTxt, s.actionTxtAlt]}>My Wardrobe</Text>
           </TouchableOpacity>
         </View>
 

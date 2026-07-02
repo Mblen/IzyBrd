@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
@@ -68,7 +69,25 @@ const FEED_TABS = ['Following', 'Local', 'For You'];
 const FOLLOWING_TAB = 0;
 const FOR_YOU_TAB = FEED_TABS.length - 1;
 
-type FeedItem = typeof FLIPS[number];
+type FeedItem = typeof FLIPS[number] & { video?: string };
+
+// TikTok-style clip: fills the card, muted, looping. Separate component so the
+// player hook only runs for cards that actually have a video.
+function FeedVideo({ uri, width, height }: { uri: string; width: number; height: number }) {
+  const player = useVideoPlayer(uri, p => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+  return (
+    <VideoView
+      player={player}
+      style={{ position: 'absolute', top: 0, left: 0, width, height }}
+      contentFit="cover"
+      nativeControls={false}
+    />
+  );
+}
 
 // --- Action Button --------------------------------------------------------------
 function ActionBtn({
@@ -117,7 +136,7 @@ function ActionBtn({
 }
 
 // --- Single Flip Card -----------------------------------------------------------
-function FlipCard({ item }: { item: typeof FLIPS[0] }) {
+function FlipCard({ item }: { item: FeedItem }) {
   const { width: winW, height: winH } = useWindowDimensions();
   const isReal = isRealFlipId(item.id);
   const [liked, setLiked] = useState(false);
@@ -181,12 +200,16 @@ function FlipCard({ item }: { item: typeof FLIPS[0] }) {
   return (
     <View style={{ width: winW, height: winH, backgroundColor: '#0a0a0a', alignItems: 'center' }}>
     <View style={[styles.card, { width: cardW, height: winH, backgroundColor: item.imageBg }]}>
-      {/* Background image */}
-      <Image
-        source={{ uri: item.image || DEFAULT_FLIP_IMAGE }}
-        style={[styles.cardImage, { width: cardW, height: winH }]}
-        resizeMode="cover"
-      />
+      {/* Background media - video when the seller attached one, else the photo */}
+      {item.video ? (
+        <FeedVideo uri={item.video} width={cardW} height={winH} />
+      ) : (
+        <Image
+          source={{ uri: item.image || DEFAULT_FLIP_IMAGE }}
+          style={[styles.cardImage, { width: cardW, height: winH }]}
+          resizeMode="cover"
+        />
+      )}
 
       {/* Gradient overlays — real fades instead of flat boxes */}
       <LinearGradient
@@ -334,6 +357,7 @@ export default function HomeScreen() {
               comments: 0,
               imageBg: '#1a1a1a',
               image: f.image_url ?? '',
+              video: f.video_url ?? '',
             }))
           );
         })

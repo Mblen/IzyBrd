@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { createFlip } from '../../lib/flips';
@@ -99,6 +99,7 @@ function Label({ text, required }: { text: string; required?: boolean }) {
 // --- Sell Screen ----------------------------------------------------------------
 export default function SellScreen() {
   const [photos, setPhotos] = useState<string[]>([]);
+  const [video, setVideo] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [story, setStory] = useState('');
   const [price, setPrice] = useState('');
@@ -109,6 +110,16 @@ export default function SellScreen() {
   const [city, setCity] = useState('');
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // "Flip it" from My Wardrobe lands here with the item pre-filled
+  const prefill = useLocalSearchParams<{
+    prefillTitle?: string; prefillStyle?: string; prefillImage?: string;
+  }>();
+  useEffect(() => {
+    if (prefill.prefillImage) setPhotos([prefill.prefillImage]);
+    if (prefill.prefillTitle) setTitle(prefill.prefillTitle);
+    if (prefill.prefillStyle && STYLES.includes(prefill.prefillStyle)) setStyle(prefill.prefillStyle);
+  }, [prefill.prefillImage, prefill.prefillTitle, prefill.prefillStyle]);
 
   const canPost =
     !posting &&
@@ -131,8 +142,18 @@ export default function SellScreen() {
     setPhotos(prev => prev.filter(p => p !== uri));
   };
 
+  const pickVideo = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos'],
+      allowsMultipleSelection: false,
+      videoMaxDuration: 30,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) setVideo(result.assets[0].uri);
+  };
+
   const resetForm = () => {
-    setPhotos([]); setTitle(''); setStory(''); setPrice('');
+    setPhotos([]); setVideo(null); setTitle(''); setStory(''); setPrice('');
     setStyle(''); setSize(''); setCondition(''); setBrand(''); setCity('');
   };
 
@@ -151,6 +172,7 @@ export default function SellScreen() {
         brand: brand.trim(),
         city: city.trim() || 'Somewhere',
         imageUri: photos[0] ?? '',
+        videoUri: video ?? '',
       });
       resetForm();
       // Drop them on their profile so the new flip is visible at once
@@ -233,6 +255,23 @@ export default function SellScreen() {
                 </TouchableOpacity>
               )}
             </View>
+
+            {/* Optional short clip - plays in the feed like TikTok */}
+            {video ? (
+              <View style={styles.videoRow}>
+                <Ionicons name="videocam" size={16} color="#fff" />
+                <Text style={styles.videoRowTxt}>Video attached - it will play in the feed</Text>
+                <TouchableOpacity onPress={() => setVideo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close-circle" size={18} color="#888" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.videoRow} activeOpacity={0.7} onPress={pickVideo}>
+                <Ionicons name="videocam-outline" size={16} color="#aaa" />
+                <Text style={styles.videoRowTxt}>Add a video (up to 30s) - plays in the feed</Text>
+                <Ionicons name="chevron-forward" size={14} color="#666" />
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.divider} />
@@ -506,6 +545,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#161616',
   },
+  videoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#262626',
+  },
+  videoRowTxt: { flex: 1, fontSize: 13, color: '#bbb', fontWeight: '500' },
   photoThumbPlus: {
     fontSize: 20,
     color: '#777',
