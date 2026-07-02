@@ -114,12 +114,15 @@ export default function SellScreen() {
   // "Flip it" from My Wardrobe lands here with the item pre-filled
   const prefill = useLocalSearchParams<{
     prefillTitle?: string; prefillStyle?: string; prefillImage?: string;
+    prefillBrand?: string; prefillSize?: string;
   }>();
   useEffect(() => {
     if (prefill.prefillImage) setPhotos([prefill.prefillImage]);
     if (prefill.prefillTitle) setTitle(prefill.prefillTitle);
     if (prefill.prefillStyle && STYLES.includes(prefill.prefillStyle)) setStyle(prefill.prefillStyle);
-  }, [prefill.prefillImage, prefill.prefillTitle, prefill.prefillStyle]);
+    if (prefill.prefillBrand) setBrand(prefill.prefillBrand);
+    if (prefill.prefillSize && SIZES.includes(prefill.prefillSize)) setSize(prefill.prefillSize);
+  }, [prefill.prefillImage, prefill.prefillTitle, prefill.prefillStyle, prefill.prefillBrand, prefill.prefillSize]);
 
   const canPost =
     !posting &&

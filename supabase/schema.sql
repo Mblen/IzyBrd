@@ -380,9 +380,16 @@ create table if not exists public.wardrobe_items (
   user_id     uuid not null references public.profiles (id) on delete cascade,
   title       text,
   style       text,
+  brand       text,
+  color       text,
+  size        text,
   image_url   text,
   created_at  timestamptz not null default now()
 );
+-- For tables created before the scanner details existed
+alter table public.wardrobe_items add column if not exists brand text;
+alter table public.wardrobe_items add column if not exists color text;
+alter table public.wardrobe_items add column if not exists size text;
 create index if not exists wardrobe_user_idx on public.wardrobe_items (user_id, created_at);
 alter table public.wardrobe_items enable row level security;
 
