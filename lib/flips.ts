@@ -20,6 +20,7 @@ export type DbFlip = {
   brand: string | null;
   city: string | null;
   image_url: string | null;
+  image_urls?: string[] | null;
   video_url?: string | null;
   status: 'active' | 'sold';
   created_at: string;
@@ -34,7 +35,8 @@ export type NewFlip = {
   condition: string;
   brand: string;
   city: string;
-  imageUri: string; // local uri from the image picker, or '' if none
+  imageUri: string; // cover photo uri from the image picker, or '' if none
+  imageUris?: string[]; // all photos (cover first); shown as a gallery on the detail page
   videoUri?: string; // optional short clip for the feed
 };
 
@@ -69,10 +71,17 @@ export async function createFlip(input: NewFlip): Promise<DbFlip> {
   const userId = auth.user?.id;
   if (!userId) throw new Error('You must be signed in to post a flip.');
 
-  const [image_url, video_url] = await Promise.all([
-    uploadMedia(input.imageUri, userId, 'image/jpeg'),
+  // Upload every photo (cover first) plus the optional video, in parallel
+  const photoUris = input.imageUris?.length
+    ? input.imageUris
+    : input.imageUri
+      ? [input.imageUri]
+      : [];
+  const [photoUrls, video_url] = await Promise.all([
+    Promise.all(photoUris.map(uri => uploadMedia(uri, userId, 'image/jpeg'))),
     uploadMedia(input.videoUri ?? '', userId, 'video/mp4'),
   ]);
+  const image_urls = photoUrls.filter((u): u is string => !!u);
 
   const row: Record<string, unknown> = {
     seller_id: userId,
@@ -84,14 +93,18 @@ export async function createFlip(input: NewFlip): Promise<DbFlip> {
     condition: input.condition,
     brand: input.brand,
     city: input.city,
-    image_url,
+    image_url: image_urls[0] ?? null,
   };
+  if (image_urls.length > 1) row.image_urls = image_urls;
   if (video_url) row.video_url = video_url;
 
+  // Insert, dropping columns the database doesn't have yet so posting always works
   let { data, error } = await supabase.from('flips').insert(row).select().single();
-  // If the video_url column hasn't been added to the database yet, retry
-  // without it so posting still works.
-  if (error && video_url) {
+  if (error && row.image_urls) {
+    delete row.image_urls;
+    ({ data, error } = await supabase.from('flips').insert(row).select().single());
+  }
+  if (error && row.video_url) {
     delete row.video_url;
     ({ data, error } = await supabase.from('flips').insert(row).select().single());
   }

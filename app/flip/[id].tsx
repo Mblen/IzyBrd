@@ -30,6 +30,7 @@ type FlipView = {
   seller: string; rating: number; reviews: number;
   style: string; size: string; condition: string;
   title: string; story: string; price: number; city: string; image: string;
+  photos?: string[];
   video?: string;
   sellerId?: string; status?: 'active' | 'sold';
 };
@@ -103,6 +104,7 @@ export default function FlipDetailScreen() {
   const [showComments, setShowComments] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [sellerRating, setSellerRating] = useState<SellerRating | null>(null);
+  const [mediaIndex, setMediaIndex] = useState(0);
 
   // Keep the comment count live for this flip.
   useEffect(() => {
@@ -133,6 +135,7 @@ export default function FlipDetailScreen() {
             price: f.price,
             city: f.city ?? '',
             image: f.image_url ?? '',
+            photos: f.image_urls?.length ? f.image_urls : undefined,
             video: f.video_url ?? '',
             sellerId: f.seller_id,
             status: f.status,
@@ -157,6 +160,13 @@ export default function FlipDetailScreen() {
   const hasRealSeller = !!flip.sellerId;
   const ratingValue = hasRealSeller ? (sellerRating?.avg ?? 0) : flip.rating;
   const reviewCount = hasRealSeller ? (sellerRating?.count ?? 0) : flip.reviews;
+
+  // Hero media: the video plays first (video-first), then every photo
+  const galleryPhotos = flip.photos?.length ? flip.photos : [flip.image || DEFAULT_FLIP_IMAGE];
+  const media: { kind: 'video' | 'photo'; uri: string }[] = [
+    ...(flip.video ? [{ kind: 'video' as const, uri: flip.video }] : []),
+    ...galleryPhotos.map(uri => ({ kind: 'photo' as const, uri })),
+  ];
 
   const localSold = useSyncExternalStore(subscribeLocalOrders, () => isLocalSold(id ?? ''), () => isLocalSold(id ?? ''));
   const sold = flip.status === 'sold' || localSold;
@@ -204,10 +214,32 @@ export default function FlipDetailScreen() {
       >
         {/* Hero image with back + heart overlays */}
         <View style={[s.imageWrap, { width: colW, height: colW * 1.15 }]}>
-          {flip.video ? (
-            <HeroVideo uri={flip.video} />
-          ) : (
-            <Image source={{ uri: flip.image || DEFAULT_FLIP_IMAGE }} style={s.image} resizeMode="cover" />
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={e => {
+              const i = Math.round(e.nativeEvent.contentOffset.x / colW);
+              if (i !== mediaIndex && i >= 0 && i < media.length) setMediaIndex(i);
+            }}
+          >
+            {media.map((m, i) => (
+              <View key={`${m.kind}-${i}`} style={{ width: colW, height: colW * 1.15 }}>
+                {m.kind === 'video' ? (
+                  <HeroVideo uri={m.uri} />
+                ) : (
+                  <Image source={{ uri: m.uri }} style={s.image} resizeMode="cover" />
+                )}
+              </View>
+            ))}
+          </ScrollView>
+          {media.length > 1 && (
+            <View style={s.dotsRow} pointerEvents="none">
+              {media.map((m, i) => (
+                <View key={`dot-${i}`} style={[s.dot, i === mediaIndex && s.dotOn]} />
+              ))}
+            </View>
           )}
           <SafeAreaView style={s.imageOverlay} edges={['top']} pointerEvents="box-none">
             <TouchableOpacity style={s.overlayBtn} onPress={() => router.back()}>
@@ -426,6 +458,17 @@ const s = StyleSheet.create({
 
   imageWrap: { width: SCREEN_WIDTH, height: SCREEN_WIDTH * 1.15, backgroundColor: '#161616' },
   image: { width: '100%', height: '100%' },
+  dotsRow: {
+    position: 'absolute',
+    bottom: 14,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.45)' },
+  dotOn: { backgroundColor: '#fff', width: 16 },
   imageOverlay: {
     position: 'absolute',
     top: 0,

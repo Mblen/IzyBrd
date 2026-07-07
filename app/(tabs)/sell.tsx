@@ -175,6 +175,7 @@ export default function SellScreen() {
         brand: brand.trim(),
         city: city.trim() || 'Somewhere',
         imageUri: photos[0] ?? '',
+        imageUris: photos,
         videoUri: video ?? '',
       });
       resetForm();

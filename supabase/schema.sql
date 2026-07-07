@@ -371,6 +371,10 @@ create policy "buyers can review their orders"
 -- ---------------------------------------------------------------------------
 alter table public.flips add column if not exists video_url text;
 
+-- All listing photos (image_url stays as the cover for compatibility);
+-- shown as a swipeable gallery on the listing detail page.
+alter table public.flips add column if not exists image_urls text[];
+
 -- ---------------------------------------------------------------------------
 -- wardrobe_items: your private closet - photos of clothes you own, which can
 -- be turned into listings with one tap ("Flip it"). Owner-only access.
