@@ -9,6 +9,8 @@
 // under Edge Functions -> Secrets.
 //
 // Request:  POST { "image_url": "https://..." }
+//       or  POST { "image_base64": "<jpeg base64>", "media_type": "image/jpeg" }
+//           (the live camera scanner sends frames directly as base64)
 // Response: { "title": "...", "style": "Hoodie", "color": "...", "brand_guess": "..." }
 
 import Anthropic from "npm:@anthropic-ai/sdk";
@@ -28,13 +30,27 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { image_url } = await req.json();
-    if (!image_url || typeof image_url !== "string") {
-      return new Response(JSON.stringify({ error: "image_url is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const { image_url, image_base64, media_type } = await req.json();
+    const hasUrl = typeof image_url === "string" && image_url.length > 0;
+    const hasBase64 = typeof image_base64 === "string" && image_base64.length > 0;
+    if (!hasUrl && !hasBase64) {
+      return new Response(
+        JSON.stringify({ error: "image_url or image_base64 is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
+
+    // Public photo URLs arrive as-is; live camera frames arrive as base64
+    const imageSource = hasUrl
+      ? { type: "url" as const, url: image_url }
+      : {
+          type: "base64" as const,
+          media_type: (media_type ?? "image/jpeg") as "image/jpeg",
+          data: image_base64,
+        };
 
     const client = new Anthropic({
       apiKey: Deno.env.get("ANTHROPIC_API_KEY"),
@@ -79,7 +95,7 @@ Deno.serve(async (req) => {
         {
           role: "user",
           content: [
-            { type: "image", source: { type: "url", url: image_url } },
+            { type: "image", source: imageSource },
             {
               type: "text",
               text:

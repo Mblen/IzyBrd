@@ -57,6 +57,13 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="camera-scan"
+          options={{
+            presentation: 'fullScreenModal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
           name="collection/[id]"
           options={{
             presentation: 'card',

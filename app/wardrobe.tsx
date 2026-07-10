@@ -146,19 +146,23 @@ export default function WardrobeScreen() {
 
         {/* Scan actions */}
         <View style={s.actionsRow}>
-          <TouchableOpacity style={s.scanBtn} activeOpacity={0.85} onPress={() => addFromPicker(true)} disabled={adding}>
-            <Ionicons name="camera" size={18} color="#000" />
-            <Text style={s.scanTxt}>{adding ? 'Saving…' : 'Scan an item'}</Text>
+          <TouchableOpacity style={s.scanBtn} activeOpacity={0.85} onPress={() => router.push('/camera-scan' as any)} disabled={adding}>
+            <Ionicons name="scan" size={18} color="#000" />
+            <Text style={s.scanTxt}>Live scan</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.libBtn} activeOpacity={0.85} onPress={() => addFromPicker(true)} disabled={adding}>
+            <Ionicons name="camera-outline" size={18} color="#fff" />
+            <Text style={s.libTxt}>{adding ? 'Saving…' : 'Photo'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.libBtn} activeOpacity={0.85} onPress={() => addFromPicker(false)} disabled={adding}>
             <Ionicons name="images-outline" size={18} color="#fff" />
-            <Text style={s.libTxt}>From photos</Text>
+            <Text style={s.libTxt}>Library</Text>
           </TouchableOpacity>
         </View>
         <Text style={s.hint}>
-          Photograph the sweatshirts you own - the scanner fills in the details.
-          When you are ready to sell one, tap "Flip it" and the listing is
-          pre-filled.
+          Point the live scanner at a sweatshirt and it identifies it as you
+          look - or add a photo and the scanner fills in the details. When you
+          are ready to sell one, tap "Flip it" and the listing is pre-filled.
         </Text>
 
         {loading ? (
