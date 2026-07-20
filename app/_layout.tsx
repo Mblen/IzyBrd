@@ -9,7 +9,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function RootLayout() {
   // Preload the icon font so glyphs render in the production web build
-  const [fontsLoaded] = useFonts(Ionicons.font);
+  const [fontsLoaded, fontError] = useFonts(Ionicons.font);
 
   useEffect(() => {
     // Without backend keys, keep the original demo flow (onboarding once).
@@ -30,8 +30,10 @@ export default function RootLayout() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Hold render until the icon font is ready so we never flash tofu glyphs
-  if (!fontsLoaded) {
+  // Hold render until the icon font is ready so we never flash tofu glyphs -
+  // but if the font fails to load (e.g. blocked or missing), show the app
+  // anyway rather than hanging on a black screen forever.
+  if (!fontsLoaded && !fontError) {
     return <View style={{ flex: 1, backgroundColor: '#0a0a0a' }} />;
   }
 
