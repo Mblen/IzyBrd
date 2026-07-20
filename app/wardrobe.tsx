@@ -85,6 +85,17 @@ export default function WardrobeScreen() {
             setStyle(s => s || (STYLES.includes(scan.style) ? scan.style : ''));
             setColor(c => c || scan.color);
             setBrand(b => b || scan.brand_guess);
+            // Auto-save the scanned details right away so closing the sheet
+            // without tapping Save never loses them ("Save details" still
+            // applies any manual edits on top).
+            const auto = {
+              title: scan.title || null,
+              style: STYLES.includes(scan.style) ? scan.style : null,
+              color: scan.color || null,
+              brand: scan.brand_guess || null,
+            };
+            updateWardrobeItem(item.id, auto).catch(() => {});
+            setItems(prev => prev.map(i => (i.id === item.id ? { ...i, ...auto } : i)));
           })
           .finally(() => setScanning(false));
       }
