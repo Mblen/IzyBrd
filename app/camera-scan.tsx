@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
-  useWindowDimensions,
+  useWindowDimensions, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -17,6 +17,57 @@ import { scanFrame, ScanResult } from '../lib/scan';
 import { addWardrobeItem } from '../lib/wardrobe';
 
 const SCAN_INTERVAL_MS = 5000; // one look every few seconds keeps costs tiny
+
+// On the web, shrink the frame before sending (phone cameras produce huge
+// frames; the AI doesn't need them). Returns a jpeg data URL, or null.
+function downscaleWeb(source: string, maxDim = 1280): Promise<string | null> {
+  return new Promise(resolve => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(null);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.6));
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = source;
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+// Camera frames come back in different shapes per platform (raw base64 on
+// native; often a data URL on web). Normalize to raw base64 for the scanner.
+async function frameToBase64(photo: { uri?: string; base64?: string | null }): Promise<string | null> {
+  let dataUrl: string | null = null;
+  let raw = photo.base64 ?? null;
+  if (raw && raw.startsWith('data:')) {
+    dataUrl = raw;
+    raw = raw.split(',')[1] ?? null;
+  }
+  if (!raw && photo.uri && photo.uri.startsWith('data:')) {
+    dataUrl = photo.uri;
+    raw = photo.uri.split(',')[1] ?? null;
+  }
+  if (Platform.OS === 'web') {
+    const source = dataUrl ?? photo.uri ?? null;
+    if (source) {
+      const shrunk = await downscaleWeb(source);
+      if (shrunk) return shrunk.split(',')[1] ?? raw;
+    }
+  }
+  return raw;
+}
 
 export default function CameraScanScreen() {
   const { width: winW } = useWindowDimensions();
@@ -31,7 +82,9 @@ export default function CameraScanScreen() {
   const [lastFrameUri, setLastFrameUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [trouble, setTrouble] = useState(false);
   const inFlight = useRef(false);
+  const failCount = useRef(0);
 
   const captureAndScan = async () => {
     if (inFlight.current || !cameraRef.current || !ready) return;
@@ -43,16 +96,25 @@ export default function CameraScanScreen() {
         base64: true,
         skipProcessing: true,
       });
-      if (photo?.base64) {
-        setLastFrameUri(photo.uri ?? null);
-        const scan = await scanFrame(photo.base64);
+      const b64 = photo ? await frameToBase64(photo) : null;
+      if (b64) {
+        setLastFrameUri(photo?.uri ?? null);
+        const scan = await scanFrame(b64);
         if (scan) {
+          failCount.current = 0;
+          setTrouble(false);
           setResult(scan);
           setSaved(false);
+          return;
         }
       }
+      // No usable frame or the scanner didn't answer - surface it after a
+      // couple of misses instead of spinning silently forever.
+      failCount.current += 1;
+      if (failCount.current >= 2) setTrouble(true);
     } catch {
-      // camera busy or scan failed - the next tick tries again
+      failCount.current += 1;
+      if (failCount.current >= 2) setTrouble(true);
     } finally {
       inFlight.current = false;
       setScanning(false);
@@ -198,7 +260,11 @@ export default function CameraScanScreen() {
           ) : (
             <View style={s.hintCard}>
               <Text style={s.hintTxt}>
-                {ready ? 'Point the camera at a sweatshirt…' : 'Starting camera…'}
+                {!ready
+                  ? 'Starting camera…'
+                  : trouble
+                    ? 'Having trouble identifying - check your connection, still trying…'
+                    : 'Point the camera at a sweatshirt…'}
               </Text>
             </View>
           )}
