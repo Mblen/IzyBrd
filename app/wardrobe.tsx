@@ -155,26 +155,32 @@ export default function WardrobeScreen() {
           <View style={s.headerBtn} />
         </View>
 
-        {/* Scan actions */}
-        <View style={s.actionsRow}>
-          <TouchableOpacity style={s.scanBtn} activeOpacity={0.85} onPress={() => router.push('/camera-scan' as any)} disabled={adding}>
-            <Ionicons name="scan" size={18} color="#000" />
-            <Text style={s.scanTxt}>Live scan</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.libBtn} activeOpacity={0.85} onPress={() => addFromPicker(true)} disabled={adding}>
+        {/* Add an item - the live scanner is the hero, with two simple
+            alternatives underneath so it's obvious how to add clothes. */}
+        <TouchableOpacity style={s.heroBtn} activeOpacity={0.85} onPress={() => router.push('/camera-scan' as any)} disabled={adding}>
+          <Ionicons name="scan" size={22} color="#000" />
+          <View>
+            <Text style={s.heroTxt}>Live scan</Text>
+            <Text style={s.heroSub}>Point your camera - it names the item for you</Text>
+          </View>
+        </TouchableOpacity>
+        <View style={s.altRow}>
+          <TouchableOpacity style={s.altBtn} activeOpacity={0.85} onPress={() => addFromPicker(true)} disabled={adding}>
             <Ionicons name="camera-outline" size={18} color="#fff" />
-            <Text style={s.libTxt}>{adding ? 'Saving…' : 'Photo'}</Text>
+            <Text style={s.altTxt}>{adding ? 'Saving…' : 'Take a photo'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.libBtn} activeOpacity={0.85} onPress={() => addFromPicker(false)} disabled={adding}>
+          <TouchableOpacity style={s.altBtn} activeOpacity={0.85} onPress={() => addFromPicker(false)} disabled={adding}>
             <Ionicons name="images-outline" size={18} color="#fff" />
-            <Text style={s.libTxt}>Library</Text>
+            <Text style={s.altTxt}>Upload</Text>
           </TouchableOpacity>
         </View>
-        <Text style={s.hint}>
-          Point the live scanner at a sweatshirt and it identifies it as you
-          look - or add a photo and the scanner fills in the details. When you
-          are ready to sell one, tap "Flip it" and the listing is pre-filled.
-        </Text>
+
+        {/* How it works - three plain steps */}
+        <View style={s.steps}>
+          <Text style={s.step}><Text style={s.stepNum}>1  </Text>Add your clothes (scan, photo, or upload)</Text>
+          <Text style={s.step}><Text style={s.stepNum}>2  </Text>The AI fills in the details automatically</Text>
+          <Text style={s.step}><Text style={s.stepNum}>3  </Text>Tap "Flip it" on any item to sell it</Text>
+        </View>
 
         {loading ? (
           <View style={s.center}><ActivityIndicator color="#888" /></View>
@@ -186,6 +192,7 @@ export default function WardrobeScreen() {
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={s.gridHelp}>Tap a photo to edit its details · "Flip it" to sell</Text>
             <View style={s.grid}>
               {items.map(item => (
                 <View key={item.id} style={[s.cell, { width: cell }]}>
@@ -312,18 +319,26 @@ const s = StyleSheet.create({
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '800', color: '#fff' },
 
-  actionsRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 4 },
-  scanBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: '#fff', borderRadius: 24, paddingVertical: 12,
+  heroBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    marginHorizontal: 16, marginTop: 6,
+    backgroundColor: '#fff', borderRadius: 18, paddingVertical: 14, paddingHorizontal: 18,
   },
-  scanTxt: { fontSize: 14, fontWeight: '800', color: '#000' },
-  libBtn: {
+  heroTxt: { fontSize: 16, fontWeight: '800', color: '#000' },
+  heroSub: { fontSize: 12, color: '#555', marginTop: 1 },
+  altRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 10 },
+  altBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderWidth: 1.5, borderColor: '#fff', borderRadius: 24, paddingVertical: 12,
+    borderWidth: 1.5, borderColor: '#333', borderRadius: 22, paddingVertical: 11,
   },
-  libTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  hint: { fontSize: 12, color: '#777', lineHeight: 17, paddingHorizontal: 16, marginTop: 10, marginBottom: 12 },
+  altTxt: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  steps: {
+    marginHorizontal: 16, marginTop: 14, marginBottom: 12,
+    backgroundColor: '#141414', borderRadius: 12, padding: 14, gap: 8,
+  },
+  step: { fontSize: 13, color: '#bbb', lineHeight: 18 },
+  stepNum: { color: '#fff', fontWeight: '800' },
+  gridHelp: { fontSize: 12, color: '#666', paddingHorizontal: 8, paddingBottom: 8 },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingBottom: 60 },
   emptyTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
