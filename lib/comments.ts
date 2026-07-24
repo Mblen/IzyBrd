@@ -13,6 +13,7 @@ export type FlipComment = {
   id: string;
   userId: string;
   username: string;
+  avatarUrl?: string | null;
   body: string;
   createdAt: string;
 };
@@ -73,7 +74,7 @@ export async function getComments(flipId: string): Promise<FlipComment[]> {
   if (!isRealFlipId(flipId)) return [...getLocal(flipId)];
   const { data, error } = await supabase
     .from('comments')
-    .select('id, user_id, body, created_at, profiles:user_id(username)')
+    .select('id, user_id, body, created_at, profiles:user_id(username, avatar_url)')
     .eq('flip_id', flipId)
     .order('created_at', { ascending: true });
   if (error) return [];
@@ -81,6 +82,7 @@ export async function getComments(flipId: string): Promise<FlipComment[]> {
     id: c.id,
     userId: c.user_id,
     username: c.profiles?.username ?? 'someone',
+    avatarUrl: c.profiles?.avatar_url ?? null,
     body: c.body,
     createdAt: c.created_at,
   }));

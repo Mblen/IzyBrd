@@ -69,7 +69,7 @@ const FEED_TABS = ['Following', 'Local', 'For You'];
 const FOLLOWING_TAB = 0;
 const FOR_YOU_TAB = FEED_TABS.length - 1;
 
-type FeedItem = typeof FLIPS[number] & { video?: string };
+type FeedItem = typeof FLIPS[number] & { video?: string; sellerAvatar?: string };
 
 // TikTok-style clip: fills the card, muted, looping. Separate component so the
 // player hook only runs for cards that actually have a video.
@@ -232,11 +232,15 @@ function FlipCard({ item }: { item: FeedItem }) {
           activeOpacity={0.8}
           onPress={() => router.push(`/user/${item.seller.replace('@', '')}` as any)}
         >
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>
-              {item.seller.replace('@', '').charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          {item.sellerAvatar ? (
+            <Image source={{ uri: item.sellerAvatar }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarInitial}>
+                {item.seller.replace('@', '').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View style={styles.followDot}>
             <Text style={styles.followDotText}>+</Text>
           </View>
@@ -358,6 +362,7 @@ export default function HomeScreen() {
               imageBg: '#1a1a1a',
               image: f.image_url ?? '',
               video: f.video_url ?? '',
+              sellerAvatar: f.seller_avatar ?? '',
             }))
           );
         })

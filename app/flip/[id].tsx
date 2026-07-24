@@ -32,6 +32,7 @@ type FlipView = {
   title: string; story: string; price: number; city: string; image: string;
   photos?: string[];
   video?: string;
+  sellerAvatar?: string | null;
   sellerId?: string; status?: 'active' | 'sold';
 };
 
@@ -137,6 +138,7 @@ export default function FlipDetailScreen() {
             image: f.image_url ?? '',
             photos: f.image_urls?.length ? f.image_urls : undefined,
             video: f.video_url ?? '',
+            sellerAvatar: f.seller_avatar,
             sellerId: f.seller_id,
             status: f.status,
           });
@@ -278,11 +280,15 @@ export default function FlipDetailScreen() {
               activeOpacity={0.7}
               onPress={() => router.push(`/user/${flip.seller.replace('@', '')}` as any)}
             >
-              <View style={s.avatar}>
-                <Text style={s.avatarInitial}>
-                  {flip.seller.replace('@', '').charAt(0).toUpperCase()}
-                </Text>
-              </View>
+              {flip.sellerAvatar ? (
+                <Image source={{ uri: flip.sellerAvatar }} style={s.avatar} />
+              ) : (
+                <View style={s.avatar}>
+                  <Text style={s.avatarInitial}>
+                    {flip.seller.replace('@', '').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
               <View>
                 <Text style={s.sellerName}>{flip.seller}</Text>
                 {reviewCount > 0 ? (

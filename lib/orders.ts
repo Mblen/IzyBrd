@@ -9,10 +9,12 @@ import { isRealFlipId } from './ids';
 
 export type OrderItem = {
   id: string;
+  flipId?: string;
   flipTitle: string;
   seller: string;
   total: number;
   time: string;
+  image?: string | null;
 };
 
 type LocalOrder = OrderItem & { flipId: string };
@@ -58,24 +60,26 @@ export async function createOrder(input: NewOrder): Promise<string> {
 
 // Orders the signed-in user has placed (DB) plus any seeded-flip purchases.
 export async function getMyOrders(): Promise<OrderItem[]> {
-  const local = localOrders.map(({ flipId, ...o }) => o);
+  const local: OrderItem[] = [...localOrders];
 
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return local;
 
   const { data, error } = await supabase
     .from('orders')
-    .select('id, total, created_at, flips:flip_id(title), seller:seller_id(username)')
+    .select('id, flip_id, total, created_at, flips:flip_id(title, image_url), seller:seller_id(username)')
     .eq('buyer_id', auth.user.id)
     .order('created_at', { ascending: false });
   if (error) return local;
 
   const dbItems: OrderItem[] = (data ?? []).map((o: any) => ({
     id: o.id,
+    flipId: o.flip_id,
     flipTitle: o.flips?.title ?? 'Flip',
     seller: o.seller?.username ? `@${o.seller.username}` : '@seller',
     total: o.total,
     time: 'recent',
+    image: o.flips?.image_url ?? null,
   }));
   return [...local, ...dbItems];
 }

@@ -9,6 +9,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { getMyFlips, DbFlip } from '../../lib/flips';
 import { getMyProfile, signOut, Profile } from '../../lib/profile';
 import { getFollowCounts } from '../../lib/follows';
+import { getMyOrders, OrderItem } from '../../lib/orders';
+import { getMyLikedFlips } from '../../lib/engagement';
+import { getSellerRating } from '../../lib/reviews';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 function initials(name: string): string {
@@ -32,6 +35,9 @@ export default function ProfileScreen() {
   // Load the current user's real flips from the database; refetch on focus so
   // a flip just posted from the Sell form shows up immediately.
   const [myFlips, setMyFlips] = useState<DbFlip[]>([]);
+  const [myOrders, setMyOrders] = useState<OrderItem[]>([]);
+  const [likedFlips, setLikedFlips] = useState<DbFlip[]>([]);
+  const [reviewCount, setReviewCount] = useState<number | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [counts, setCounts] = useState<{ followers: number; following: number } | null>(null);
   useFocusEffect(
@@ -41,11 +47,16 @@ export default function ProfileScreen() {
       getMyFlips()
         .then(f => { if (active) setMyFlips(f); })
         .catch(() => { /* leave the mock seed data in place on error */ });
+      getMyOrders().then(o => { if (active) setMyOrders(o); }).catch(() => {});
+      getMyLikedFlips().then(f => { if (active) setLikedFlips(f); }).catch(() => {});
       getMyProfile()
         .then(p => {
           if (!active) return;
           setProfile(p);
-          if (p) getFollowCounts(p.id).then(c => { if (active) setCounts(c); }).catch(() => {});
+          if (p) {
+            getFollowCounts(p.id).then(c => { if (active) setCounts(c); }).catch(() => {});
+            getSellerRating(p.id).then(r => { if (active) setReviewCount(r.count); }).catch(() => {});
+          }
         })
         .catch(() => {});
       return () => { active = false; };
@@ -66,12 +77,21 @@ export default function ProfileScreen() {
     signOut();
   };
 
-  // Only the user's own real listings show in their shop
-  const shopData = myFlips.map(f => ({
-    id: f.id, title: f.title, price: f.price, color: '#1a1a1a', image: f.image_url || DEFAULT_IMG,
+  // Each tab shows the user's own real data: active listings, sold listings,
+  // purchases they made, and flips they liked.
+  const toCell = (f: DbFlip) => ({
+    id: f.id, navId: f.id, title: f.title, price: f.price, color: '#1a1a1a',
+    image: f.image_url || DEFAULT_IMG,
+  });
+  const shopData = myFlips.filter(f => f.status !== 'sold').map(toCell);
+  const soldData = myFlips.filter(f => f.status === 'sold').map(toCell);
+  const purchaseData = myOrders.map(o => ({
+    id: o.id, navId: o.flipId ?? '', title: o.flipTitle, price: o.total,
+    color: '#1a1a1a', image: o.image || DEFAULT_IMG,
   }));
-  const data = activeTab === 0 ? shopData : [];
-  const activeCount = activeTab === 0 ? shopData.length : 0;
+  const likesData = likedFlips.map(toCell);
+  const data = [shopData, soldData, purchaseData, likesData][activeTab] ?? [];
+  const activeCount = data.length;
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -108,7 +128,7 @@ export default function ProfileScreen() {
             <Text style={s.statLabel}>Following</Text>
           </View>
           <View style={s.statBlock}>
-            <Text style={s.statNum}>—</Text>
+            <Text style={s.statNum}>{reviewCount ?? '—'}</Text>
             <Text style={s.statLabel}>Reviews</Text>
           </View>
         </View>
@@ -165,14 +185,12 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* Active count */}
-        {(activeTab === 0 || activeTab === 1) && (
-          <View style={s.countRow}>
-            <Text style={s.countTxt}>
-              {activeCount} {activeTab === 0 ? 'active listings' : 'sold'}
-            </Text>
-          </View>
-        )}
+        {/* Count for the active tab */}
+        <View style={s.countRow}>
+          <Text style={s.countTxt}>
+            {activeCount} {['active listings', 'sold', 'purchases', 'liked'][activeTab]}
+          </Text>
+        </View>
 
         {/* Grid */}
         {data.length > 0 ? (
@@ -182,7 +200,7 @@ export default function ProfileScreen() {
                 key={item.id}
                 style={[s.cell, { width: cell, height: cell, backgroundColor: item.color }]}
                 activeOpacity={0.85}
-                onPress={() => router.push(`/flip/${item.id}` as any)}
+                onPress={() => { if (item.navId) router.push(`/flip/${item.navId}` as any); }}
               >
                 {item.image ? (
                   <Image source={{ uri: item.image }} style={[s.cellImage, { width: cell, height: cell }]} resizeMode="cover" />

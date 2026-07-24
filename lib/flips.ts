@@ -135,15 +135,15 @@ export async function getFollowingFeedFlips(limit = 30): Promise<DbFlipWithSelle
   if (!ids.length) return [];
   const { data, error } = await supabase
     .from('flips')
-    .select('*, profiles:seller_id(username)')
+    .select('*, profiles:seller_id(username, avatar_url)')
     .eq('status', 'active')
     .in('seller_id', ids)
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) return [];
   return (data ?? []).map(row => {
-    const { profiles, ...flip } = row as DbFlip & { profiles: { username: string | null } | null };
-    return { ...flip, seller_username: profiles?.username ?? null };
+    const { profiles, ...flip } = row as DbFlip & { profiles: { username: string | null; avatar_url: string | null } | null };
+    return { ...flip, seller_username: profiles?.username ?? null, seller_avatar: profiles?.avatar_url ?? null };
   });
 }
 
@@ -174,32 +174,35 @@ export async function getFlipsBySeller(sellerId: string): Promise<DbFlip[]> {
   return (data ?? []) as DbFlip[];
 }
 
-// A flip plus its seller's username (for the feed and detail screen).
-export type DbFlipWithSeller = DbFlip & { seller_username: string | null };
+// A flip plus its seller's username and avatar (for the feed and detail screen).
+export type DbFlipWithSeller = DbFlip & {
+  seller_username: string | null;
+  seller_avatar: string | null;
+};
 
 // Active flips from everyone, newest first - powers the home feed.
 export async function getFeedFlips(limit = 30): Promise<DbFlipWithSeller[]> {
   const { data, error } = await supabase
     .from('flips')
-    .select('*, profiles:seller_id(username)')
+    .select('*, profiles:seller_id(username, avatar_url)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
   return (data ?? []).map(row => {
-    const { profiles, ...flip } = row as DbFlip & { profiles: { username: string | null } | null };
-    return { ...flip, seller_username: profiles?.username ?? null };
+    const { profiles, ...flip } = row as DbFlip & { profiles: { username: string | null; avatar_url: string | null } | null };
+    return { ...flip, seller_username: profiles?.username ?? null, seller_avatar: profiles?.avatar_url ?? null };
   });
 }
 
 export async function getFlip(id: string): Promise<DbFlipWithSeller | null> {
   const { data, error } = await supabase
     .from('flips')
-    .select('*, profiles:seller_id(username)')
+    .select('*, profiles:seller_id(username, avatar_url)')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const { profiles, ...flip } = data as DbFlip & { profiles: { username: string | null } | null };
-  return { ...flip, seller_username: profiles?.username ?? null };
+  const { profiles, ...flip } = data as DbFlip & { profiles: { username: string | null; avatar_url: string | null } | null };
+  return { ...flip, seller_username: profiles?.username ?? null, seller_avatar: profiles?.avatar_url ?? null };
 }

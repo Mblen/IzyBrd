@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, Modal,
+  View, Text, TextInput, TouchableOpacity, FlatList, Modal, Image,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -104,9 +104,13 @@ export default function CommentsSheet({
               }
               renderItem={({ item }) => (
                 <View style={s.row}>
-                  <View style={s.avatar}>
-                    <Text style={s.avatarTxt}>{(item.username || '?').charAt(0).toUpperCase()}</Text>
-                  </View>
+                  {item.avatarUrl ? (
+                    <Image source={{ uri: item.avatarUrl }} style={s.avatar} />
+                  ) : (
+                    <View style={s.avatar}>
+                      <Text style={s.avatarTxt}>{(item.username || '?').charAt(0).toUpperCase()}</Text>
+                    </View>
+                  )}
                   <View style={s.bubble}>
                     <Text style={s.rowHead}>
                       <Text style={s.user}>@{item.username}</Text>

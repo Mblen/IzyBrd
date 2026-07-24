@@ -6,7 +6,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Image, Modal, TextInput,
-  StyleSheet, ActivityIndicator, useWindowDimensions,
+  StyleSheet, ActivityIndicator, useWindowDimensions, Platform, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -126,8 +126,19 @@ export default function WardrobeScreen() {
   };
 
   const remove = (id: string) => {
-    setItems(prev => prev.filter(i => i.id !== id));
-    removeWardrobeItem(id).catch(() => {});
+    const doRemove = () => {
+      setItems(prev => prev.filter(i => i.id !== id));
+      removeWardrobeItem(id).catch(() => {});
+    };
+    // Confirm before deleting - the x is easy to tap by accident
+    if (Platform.OS === 'web') {
+      if (window.confirm('Remove this item from your wardrobe?')) doRemove();
+    } else {
+      Alert.alert('Remove item', 'Remove this item from your wardrobe?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: doRemove },
+      ]);
+    }
   };
 
   const flipIt = (item: WardrobeItem) => {
