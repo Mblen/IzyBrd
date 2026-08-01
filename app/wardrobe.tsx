@@ -211,9 +211,9 @@ export default function WardrobeScreen() {
 
         {/* How it works - three plain steps */}
         <View style={s.steps}>
-          <Text style={s.step}><Text style={s.stepNum}>1  </Text>Add your clothes (scan, photo, or upload)</Text>
-          <Text style={s.step}><Text style={s.stepNum}>2  </Text>The AI fills in the details automatically</Text>
-          <Text style={s.step}><Text style={s.stepNum}>3  </Text>Tap "Flip the bird" on any item to sell it</Text>
+          <Text style={s.step}><Text style={s.stepNum}>1  </Text>Add a photo of your sweatshirt</Text>
+          <Text style={s.step}><Text style={s.stepNum}>2  </Text>We fill in the details for you</Text>
+          <Text style={s.step}><Text style={s.stepNum}>3  </Text>Tap "Flip the bird" to sell it</Text>
         </View>
 
         {loading ? (
