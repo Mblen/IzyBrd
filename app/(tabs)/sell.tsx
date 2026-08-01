@@ -111,7 +111,7 @@ export default function SellScreen() {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // "Flip it" from My Wardrobe lands here with the item pre-filled
+  // "Flip the bird" from My Wardrobe lands here with the item pre-filled
   const prefill = useLocalSearchParams<{
     prefillTitle?: string; prefillStyle?: string; prefillImage?: string;
     prefillBrand?: string; prefillSize?: string;

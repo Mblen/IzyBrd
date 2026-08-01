@@ -213,7 +213,7 @@ export default function WardrobeScreen() {
         <View style={s.steps}>
           <Text style={s.step}><Text style={s.stepNum}>1  </Text>Add your clothes (scan, photo, or upload)</Text>
           <Text style={s.step}><Text style={s.stepNum}>2  </Text>The AI fills in the details automatically</Text>
-          <Text style={s.step}><Text style={s.stepNum}>3  </Text>Tap "Flip it" on any item to sell it</Text>
+          <Text style={s.step}><Text style={s.stepNum}>3  </Text>Tap "Flip the bird" on any item to sell it</Text>
         </View>
 
         {loading ? (
@@ -226,7 +226,7 @@ export default function WardrobeScreen() {
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={s.gridHelp}>Tap a photo to edit its details · "Flip it" to sell</Text>
+            <Text style={s.gridHelp}>Tap a photo to edit its details · "Flip the bird" to sell</Text>
             <View style={s.grid}>
               {items.map(item => (
                 <View key={item.id} style={[s.cell, { width: cell }]}>
@@ -251,7 +251,7 @@ export default function WardrobeScreen() {
                     <Text style={s.cellTitle} numberOfLines={1}>{item.title}</Text>
                   ) : null}
                   <TouchableOpacity style={s.flipBtn} activeOpacity={0.85} onPress={() => flipIt(item)}>
-                    <Text style={s.flipBtnTxt}>Flip it</Text>
+                    <Text style={s.flipBtnTxt} numberOfLines={1}>Flip the bird</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -406,7 +406,7 @@ const s = StyleSheet.create({
     marginTop: 5, backgroundColor: '#1e1e1e', borderRadius: 14,
     paddingVertical: 6, alignItems: 'center', borderWidth: 1, borderColor: '#2e2e2e',
   },
-  flipBtnTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  flipBtnTxt: { fontSize: 11, fontWeight: '700', color: '#fff' },
 
   // Detail sheet
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
