@@ -30,7 +30,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { image_url, image_base64, media_type } = await req.json();
+    const { image_url, image_base64, media_type, mode } = await req.json();
+    // "multi" finds every sweatshirt in one photo (closet scan); the default
+    // identifies a single garment.
+    const isMulti = mode === "multi";
     const hasUrl = typeof image_url === "string" && image_url.length > 0;
     const hasBase64 = typeof image_base64 === "string" && image_base64.length > 0;
     if (!hasUrl && !hasBase64) {
@@ -56,39 +59,92 @@ Deno.serve(async (req) => {
       apiKey: Deno.env.get("ANTHROPIC_API_KEY"),
     });
 
+    // One garment's fields, shared by both modes
+    const garmentProps = {
+      title: {
+        type: "string",
+        description:
+          "A short, catchy marketplace listing title for this garment, 2-4 words, e.g. 'Vintage Navy Crew'",
+      },
+      style: {
+        type: "string",
+        enum: STYLES,
+        description: "The garment style category",
+      },
+      color: {
+        type: "string",
+        description: "The main color, one or two words",
+      },
+      brand_guess: {
+        type: "string",
+        description:
+          "The brand if identifiable from logos or tags, otherwise an empty string. Never guess.",
+      },
+    };
+
+    // Where the garment sits in the photo, so the app can crop it out.
+    const boxProps = {
+      x: { type: "number", description: "Left edge, 0-1 fraction of image width" },
+      y: { type: "number", description: "Top edge, 0-1 fraction of image height" },
+      width: { type: "number", description: "Width as a 0-1 fraction of image width" },
+      height: { type: "number", description: "Height as a 0-1 fraction of image height" },
+    };
+
+    const singleSchema = {
+      type: "object",
+      properties: garmentProps,
+      required: ["title", "style", "color", "brand_guess"],
+      additionalProperties: false,
+    };
+
+    const multiSchema = {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          description: "One entry per distinct sweatshirt visible in the photo",
+          items: {
+            type: "object",
+            properties: {
+              ...garmentProps,
+              box: {
+                type: "object",
+                description:
+                  "Tight bounding box around this garment only, as fractions of the image size, origin at the top-left corner",
+                properties: boxProps,
+                required: ["x", "y", "width", "height"],
+                additionalProperties: false,
+              },
+            },
+            required: ["title", "style", "color", "brand_guess", "box"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["items"],
+      additionalProperties: false,
+    };
+
+    const singlePrompt =
+      "This is a photo of a sweatshirt someone is adding to their virtual wardrobe " +
+      "in a second-hand marketplace app. Identify the garment's details.";
+
+    const multiPrompt =
+      "This photo shows someone's closet or a pile of clothes. Find every distinct " +
+      "sweatshirt, hoodie, crewneck, zip-up, mock neck or cropped sweatshirt that is " +
+      "clearly visible, and return one entry per garment with a tight bounding box " +
+      "around that garment only. Ignore other clothing types (trousers, shoes, bags, " +
+      "dresses), duplicates of the same physical garment, and any item too small or " +
+      "obscured to identify confidently. Return an empty list if there are none.";
+
     const response = await client.messages.create({
       model: "claude-opus-4-8",
-      max_tokens: 1024,
+      max_tokens: 4096,
       thinking: { type: "adaptive" },
       output_config: {
         format: {
           type: "json_schema",
-          schema: {
-            type: "object",
-            properties: {
-              title: {
-                type: "string",
-                description:
-                  "A short, catchy marketplace listing title for this garment, 2-4 words, e.g. 'Vintage Navy Crew'",
-              },
-              style: {
-                type: "string",
-                enum: STYLES,
-                description: "The garment style category",
-              },
-              color: {
-                type: "string",
-                description: "The main color, one or two words",
-              },
-              brand_guess: {
-                type: "string",
-                description:
-                  "The brand if identifiable from logos or tags, otherwise an empty string. Never guess.",
-              },
-            },
-            required: ["title", "style", "color", "brand_guess"],
-            additionalProperties: false,
-          },
+          schema: isMulti ? multiSchema : singleSchema,
         },
       },
       messages: [
@@ -96,12 +152,7 @@ Deno.serve(async (req) => {
           role: "user",
           content: [
             { type: "image", source: imageSource },
-            {
-              type: "text",
-              text:
-                "This is a photo of a sweatshirt someone is adding to their virtual wardrobe " +
-                "in a second-hand marketplace app. Identify the garment's details.",
-            },
+            { type: "text", text: isMulti ? multiPrompt : singlePrompt },
           ],
         },
       ],

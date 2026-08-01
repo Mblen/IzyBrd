@@ -66,6 +66,13 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="closet-scan"
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
           name="collection/[id]"
           options={{
             presentation: 'card',

@@ -106,6 +106,20 @@ export default function WardrobeScreen() {
     }
   };
 
+  // One photo of several sweatshirts -> the review screen finds and crops each
+  const scanWholeCloset = async () => {
+    if (adding) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'] as ImagePicker.MediaType[],
+      quality: 0.9,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    router.push({
+      pathname: '/closet-scan',
+      params: { photo: result.assets[0].uri },
+    } as any);
+  };
+
   const saveDetails = async () => {
     if (!editing || saving) return;
     setSaving(true);
@@ -175,10 +189,19 @@ export default function WardrobeScreen() {
             <Text style={s.heroSub}>Point your camera - it names the item for you</Text>
           </View>
         </TouchableOpacity>
+        <TouchableOpacity style={s.closetBtn} activeOpacity={0.85} onPress={scanWholeCloset} disabled={adding}>
+          <Ionicons name="albums-outline" size={20} color="#fff" />
+          <View style={{ flex: 1 }}>
+            <Text style={s.closetTxt}>Scan your whole closet</Text>
+            <Text style={s.closetSub}>One photo of several sweatshirts - adds them all at once</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#666" />
+        </TouchableOpacity>
+
         <View style={s.altRow}>
           <TouchableOpacity style={s.altBtn} activeOpacity={0.85} onPress={() => addFromPicker(true)} disabled={adding}>
             <Ionicons name="camera-outline" size={18} color="#fff" />
-            <Text style={s.altTxt}>{adding ? 'Saving…' : 'Take a photo'}</Text>
+            <Text style={s.altTxt}>{adding ? 'Saving…' : 'One photo'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.altBtn} activeOpacity={0.85} onPress={() => addFromPicker(false)} disabled={adding}>
             <Ionicons name="images-outline" size={18} color="#fff" />
@@ -221,6 +244,9 @@ export default function WardrobeScreen() {
                       <Ionicons name="close" size={12} color="#fff" />
                     </TouchableOpacity>
                   </TouchableOpacity>
+                  {item.brand ? (
+                    <Text style={s.cellBrand} numberOfLines={1}>{item.brand}</Text>
+                  ) : null}
                   {item.title ? (
                     <Text style={s.cellTitle} numberOfLines={1}>{item.title}</Text>
                   ) : null}
@@ -337,6 +363,14 @@ const s = StyleSheet.create({
   },
   heroTxt: { fontSize: 16, fontWeight: '800', color: '#000' },
   heroSub: { fontSize: 12, color: '#555', marginTop: 1 },
+  closetBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    marginHorizontal: 16, marginTop: 10,
+    backgroundColor: '#161616', borderRadius: 16, borderWidth: 1, borderColor: '#262626',
+    paddingVertical: 13, paddingHorizontal: 16,
+  },
+  closetTxt: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  closetSub: { fontSize: 11, color: '#777', marginTop: 2 },
   altRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 10 },
   altBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -361,7 +395,8 @@ const s = StyleSheet.create({
     borderRadius: 10, overflow: 'hidden', backgroundColor: '#161616',
     alignItems: 'center', justifyContent: 'center',
   },
-  cellTitle: { fontSize: 11, color: '#bbb', fontWeight: '600', marginTop: 4, paddingHorizontal: 2 },
+  cellBrand: { fontSize: 11, color: '#fff', fontWeight: '800', marginTop: 5, paddingHorizontal: 2 },
+  cellTitle: { fontSize: 11, color: '#888', fontWeight: '500', marginTop: 1, paddingHorizontal: 2 },
   removeBtn: {
     position: 'absolute', top: 6, right: 6,
     width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.65)',
