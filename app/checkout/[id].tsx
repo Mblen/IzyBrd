@@ -278,7 +278,7 @@ export default function CheckoutScreen() {
           activeOpacity={0.85}
           disabled={placing}
         >
-          <Text style={s.payBtnTxt}>{placing ? 'Processing…' : `Buy the flip · $${total}`}</Text>
+          <Text style={s.payBtnTxt}>{placing ? 'Processing…' : `Buy · $${total}`}</Text>
         </TouchableOpacity>
       </View>
       </View>

@@ -4,7 +4,7 @@ import {
   StyleSheet, TextInput, useWindowDimensions, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { searchFlips } from '../lib/flips';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -30,7 +30,9 @@ export default function SearchScreen() {
   const colW = Math.min(winW, 480);
   const CARD_W = (colW - 48) / 2;
   const priceW = (colW - 52) / 2;
-  const [query, setQuery] = useState('');
+  // Arriving from a category on Discover starts the search already filled in
+  const { q: startQuery } = useLocalSearchParams<{ q?: string }>();
+  const [query, setQuery] = useState(startQuery ?? '');
   const [recent, setRecent] = useState(RECENT);
 
   const [filtered, setFiltered] = useState<ResultItem[]>([]);

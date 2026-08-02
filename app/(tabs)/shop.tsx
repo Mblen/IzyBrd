@@ -1,14 +1,20 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
   StyleSheet, Dimensions, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CategoryIcon, CATEGORY_TYPE } from '../../components/CategoryIcon';
+import { getFeedFlips, DbFlipWithSeller, DEFAULT_FLIP_IMAGE } from '../../lib/flips';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 const { width: W } = Dimensions.get('window');
+
+// Tapping a category searches for it
+const openSearch = (q: string) => router.push(`/search?q=${encodeURIComponent(q)}` as any);
+const openFeed = () => router.push('/(tabs)' as any);
 
 // Parke-style mixed typography helper
 function ElegantHeader({ bold, italic }: { bold: string; italic: string }) {
@@ -24,21 +30,6 @@ const typo = StyleSheet.create({
   italic: { fontSize: 26, fontStyle: 'italic', fontFamily: 'Georgia', color: '#fff', letterSpacing: -0.5 },
 });
 
-// Flip data for trending
-const TRENDING = [
-  { id: '1', title: 'Christy Hoodie',   price: 38,  color: '#2d1a0e' },
-  { id: '2', title: 'Nash Vintage Crew', price: 52,  color: '#1e1a2d' },
-  { id: '3', title: 'Luke Zip-Up',       price: 54,  color: '#1a2410' },
-  { id: '4', title: 'Hailey Crop Crew',  price: 29,  color: '#2a1f14' },
-];
-
-// Editorial banner cards
-const EDITORIALS = [
-  { id: 'e1', title: 'The Malibu Edit',    sub: 'Soft. Worn-in. Effortless.',    color: '#2d1a0e' },
-  { id: 'e2', title: 'Campus Closets',     sub: 'What college girls are flipping', color: '#1a2220' },
-  { id: 'e3', title: 'Vintage California', sub: 'Pre-2000 deadstock only',        color: '#1e1a2d' },
-];
-
 const CATEGORIES = [
   { label: 'Hoodies',     emoji: '🧥' },
   { label: 'Crew Necks',  emoji: '👕' },
@@ -50,6 +41,24 @@ const CATEGORIES = [
 ];
 
 export default function DiscoverScreen() {
+  // Real listings power the Discover previews and Trending row, so every card
+  // here opens an actual flip rather than being decoration.
+  const [flips, setFlips] = useState<DbFlipWithSeller[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!isSupabaseConfigured) return;
+      let active = true;
+      getFeedFlips(12)
+        .then(f => { if (active) setFlips(f); })
+        .catch(() => {});
+      return () => { active = false; };
+    }, [])
+  );
+
+  const preview = flips.slice(0, 3);
+  const trending = flips.slice(0, 8);
+  const openFlip = (id: string) => router.push(`/flip/${id}` as any);
+
   return (
     <SafeAreaView style={s.container} edges={['top']}>
       <ScrollView
@@ -70,37 +79,48 @@ export default function DiscoverScreen() {
           <Ionicons name="bag-outline" size={18} color="#bbb" />
         </TouchableOpacity>
 
-        {/* Hero — latest main collection, full width */}
-        <TouchableOpacity style={s.hero} activeOpacity={0.9}>
+        {/* Hero — opens the main feed */}
+        <TouchableOpacity style={s.hero} activeOpacity={0.9} onPress={openFeed}>
           <View style={[s.heroInner, { backgroundColor: '#1a1a2e' }]}>
             <View style={s.heroText}>
-              <Text style={s.heroLabel}>Latest Collection</Text>
-              <Text style={s.heroTitle}>NYC Summer{'\n'}Drops 2026</Text>
-              <Text style={s.heroSub}>Tap to shop</Text>
+              <Text style={s.heroLabel}>Everything on IzyBrd</Text>
+              <Text style={s.heroTitle}>Browse every{'\n'}sweatshirt</Text>
+              <Text style={s.heroSub}>Tap to open the feed</Text>
             </View>
-            <View style={s.heroDots}>
-              <View style={[s.dot, s.dotOn]} />
-              <View style={s.dot} />
-              <View style={s.dot} />
-            </View>
+            <Ionicons name="arrow-forward" size={22} color="rgba(255,255,255,0.7)" />
           </View>
         </TouchableOpacity>
 
-        {/* Discover card — like Depop "discover your next look" */}
+        {/* Discover card — previews of real listings */}
         <View style={s.discoverCard}>
           <View style={s.discoverHeader}>
             <View>
               <Text style={s.discoverTitle}>Discover your next flip</Text>
-              <Text style={s.discoverSub}>Curated by the IzyBrd community</Text>
+              <Text style={s.discoverSub}>Fresh from the IzyBrd community</Text>
             </View>
             <View style={s.newBadge}><Text style={s.newBadgeTxt}>New</Text></View>
           </View>
           <View style={s.discoverGrid}>
-            {['#1a1a2e', '#2d2d2d', '#0d1b2a'].map((c, i) => (
-              <TouchableOpacity key={i} style={[s.discoverCell, { backgroundColor: c }]} activeOpacity={0.85} />
-            ))}
+            {preview.length > 0
+              ? preview.map(f => (
+                  <TouchableOpacity
+                    key={f.id}
+                    style={s.discoverCell}
+                    activeOpacity={0.85}
+                    onPress={() => openFlip(f.id)}
+                  >
+                    <Image
+                      source={{ uri: f.image_url || DEFAULT_FLIP_IMAGE }}
+                      style={s.discoverImg}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ))
+              : ['#1a1a2e', '#2d2d2d', '#0d1b2a'].map((c, i) => (
+                  <View key={i} style={[s.discoverCell, { backgroundColor: c }]} />
+                ))}
           </View>
-          <TouchableOpacity style={s.browseBtn} activeOpacity={0.85}>
+          <TouchableOpacity style={s.browseBtn} activeOpacity={0.85} onPress={openFeed}>
             <Text style={s.browseBtnTxt}>Browse flips</Text>
           </TouchableOpacity>
         </View>
@@ -110,7 +130,12 @@ export default function DiscoverScreen() {
           <ElegantHeader bold="Shop" italic="by category" />
           <View style={s.catList}>
             {CATEGORIES.map((c, i) => (
-              <TouchableOpacity key={c.label} style={[s.catRow, i < CATEGORIES.length - 1 && s.catRowBorder]} activeOpacity={0.75}>
+              <TouchableOpacity
+                key={c.label}
+                style={[s.catRow, i < CATEGORIES.length - 1 && s.catRowBorder]}
+                activeOpacity={0.75}
+                onPress={() => openSearch(c.label)}
+              >
                 <View style={s.catIcon}>
                   <CategoryIcon type={CATEGORY_TYPE[c.label]} size={26} color="#fff" />
                 </View>
@@ -121,29 +146,30 @@ export default function DiscoverScreen() {
           </View>
         </View>
 
-        {/* Editorial banners */}
-        <View style={s.section}>
-          {EDITORIALS.map(e => (
-            <TouchableOpacity key={e.id} style={[s.editorialBanner, { backgroundColor: e.color }]} activeOpacity={0.88}>
-              <Text style={s.editorialTitle}>{e.title}</Text>
-              <Text style={s.editorialSub}>{e.sub}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Trending — horizontal scroll */}
-        <View style={s.section}>
-          <ElegantHeader bold="Trending" italic="now" />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.trendScroll} style={{ marginTop: 14 }}>
-            {TRENDING.map(f => (
-              <TouchableOpacity key={f.id} style={s.trendCard} activeOpacity={0.85}>
-                <View style={[s.trendImg, { backgroundColor: f.color }]} />
-                <Text style={s.trendTitle} numberOfLines={1}>{f.title}</Text>
-                <Text style={s.trendPrice}>${f.price}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        {/* Newest listings — real flips, horizontal scroll */}
+        {trending.length > 0 && (
+          <View style={s.section}>
+            <ElegantHeader bold="Newest" italic="listings" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.trendScroll} style={{ marginTop: 14 }}>
+              {trending.map(f => (
+                <TouchableOpacity
+                  key={f.id}
+                  style={s.trendCard}
+                  activeOpacity={0.85}
+                  onPress={() => openFlip(f.id)}
+                >
+                  <Image
+                    source={{ uri: f.image_url || DEFAULT_FLIP_IMAGE }}
+                    style={s.trendImg}
+                    resizeMode="cover"
+                  />
+                  <Text style={s.trendTitle} numberOfLines={1}>{f.title}</Text>
+                  <Text style={s.trendPrice}>${f.price}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -174,9 +200,6 @@ const s = StyleSheet.create({
   heroLabel: { fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600', letterSpacing: 1.5, textTransform: 'uppercase' },
   heroTitle: { fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5, lineHeight: 32 },
   heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', fontFamily: 'Georgia' },
-  heroDots: { flexDirection: 'row', gap: 5 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.25)' },
-  dotOn: { backgroundColor: '#fff', width: 18 },
 
   // Discover card
   discoverCard: {
@@ -189,7 +212,8 @@ const s = StyleSheet.create({
   newBadge: { backgroundColor: '#1e6a1e', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   newBadgeTxt: { color: '#fff', fontSize: 11, fontWeight: '700' },
   discoverGrid: { flexDirection: 'row', gap: 6, marginBottom: 14 },
-  discoverCell: { flex: 1, aspectRatio: 0.75, borderRadius: 10 },
+  discoverCell: { flex: 1, aspectRatio: 0.75, borderRadius: 10, overflow: 'hidden', backgroundColor: '#1a1a1a' },
+  discoverImg: { width: '100%', height: '100%' },
   browseBtn: { backgroundColor: '#1e1e1e', borderRadius: 30, paddingVertical: 14, alignItems: 'center' },
   browseBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
@@ -206,9 +230,6 @@ const s = StyleSheet.create({
   catArrow: { fontSize: 22, color: '#444' },
 
   // Editorial banners
-  editorialBanner: { height: 100, borderRadius: 14, marginBottom: 10, justifyContent: 'flex-end', padding: 16 },
-  editorialTitle: { fontSize: 18, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
-  editorialSub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 3, fontStyle: 'italic', fontFamily: 'Georgia' },
 
   // Trending
   trendScroll: { gap: 12 },

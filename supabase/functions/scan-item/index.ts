@@ -24,12 +24,66 @@ const corsHeaders = {
 // Must match the STYLES chips in the app's Sell form
 const STYLES = ["Crew", "Hoodie", "Zip Up", "Mock Neck", "Crop"];
 
+// Each scan costs real money, so cap how often one account can scan. This is
+// per running instance (a soft limit that raises the bar on abuse) - the hard
+// protection is the monthly spend cap set in the Anthropic console.
+const MAX_SCANS_PER_HOUR = 40;
+const HOUR_MS = 60 * 60 * 1000;
+const recentScans = new Map<string, number[]>();
+
+function overLimit(userId: string): boolean {
+  const now = Date.now();
+  const recent = (recentScans.get(userId) ?? []).filter(t => now - t < HOUR_MS);
+  recent.push(now);
+  recentScans.set(userId, recent);
+  // Don't let the map grow without bound
+  if (recentScans.size > 5000) {
+    for (const [k, v] of recentScans) {
+      if (!v.some(t => now - t < HOUR_MS)) recentScans.delete(k);
+    }
+  }
+  return recent.length > MAX_SCANS_PER_HOUR;
+}
+
+// The caller's id from the JWT Supabase already verified for us.
+function callerId(req: Request): string | null {
+  try {
+    const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const json = JSON.parse(
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    return typeof json.sub === "string" ? json.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+// Roughly 8MB of image data; anything larger is not a phone photo
+const MAX_BASE64_CHARS = 11_000_000;
+const ALLOWED_MEDIA = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   try {
+    const user = callerId(req);
+    if (user && overLimit(user)) {
+      return json(
+        { error: "Too many scans right now. Please try again in a little while." },
+        429,
+      );
+    }
+
     const { image_url, image_base64, media_type, mode } = await req.json();
     // "multi" finds every sweatshirt in one photo (closet scan); the default
     // identifies a single garment.
@@ -37,21 +91,22 @@ Deno.serve(async (req) => {
     const hasUrl = typeof image_url === "string" && image_url.length > 0;
     const hasBase64 = typeof image_base64 === "string" && image_base64.length > 0;
     if (!hasUrl && !hasBase64) {
-      return new Response(
-        JSON.stringify({ error: "image_url or image_base64 is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return json({ error: "image_url or image_base64 is required" }, 400);
     }
+    if (hasBase64 && image_base64.length > MAX_BASE64_CHARS) {
+      return json({ error: "That image is too large to scan." }, 413);
+    }
+    if (hasUrl && !/^https:\/\//i.test(image_url)) {
+      return json({ error: "image_url must be an https URL" }, 400);
+    }
+    const mediaType = ALLOWED_MEDIA.includes(media_type) ? media_type : "image/jpeg";
 
     // Public photo URLs arrive as-is; live camera frames arrive as base64
     const imageSource = hasUrl
       ? { type: "url" as const, url: image_url }
       : {
           type: "base64" as const,
-          media_type: (media_type ?? "image/jpeg") as "image/jpeg",
+          media_type: mediaType as "image/jpeg",
           data: image_base64,
         };
 
@@ -163,16 +218,10 @@ Deno.serve(async (req) => {
     const result = textBlock ? JSON.parse(textBlock.text) : null;
     if (!result) throw new Error("No result from model");
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json(result);
   } catch (e) {
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "scan failed" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    // Log the detail server-side; don't hand internals back to the caller
+    console.error("scan-item failed:", e);
+    return json({ error: "Could not scan that image." }, 500);
   }
 });

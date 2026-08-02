@@ -197,7 +197,7 @@ export default function SellScreen() {
         <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7} onPress={resetForm}>
           <Text style={styles.headerCancel}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Flip</Text>
+        <Text style={styles.headerTitle}>New Listing</Text>
         <TouchableOpacity
           style={[styles.postBtn, canPost && styles.postBtnActive]}
           activeOpacity={0.8}

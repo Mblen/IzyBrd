@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, FlatList, Image, useWindowDimensions,
+  StyleSheet, FlatList, Image, useWindowDimensions, Share, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -13,6 +13,7 @@ import { getMyOrders, OrderItem } from '../../lib/orders';
 import { getMyLikedFlips } from '../../lib/engagement';
 import { getSellerRating } from '../../lib/reviews';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import { SHARE_BASE } from './index';
 
 function initials(name: string): string {
   const parts = name.replace('@', '').trim().split(/\s+/);
@@ -77,6 +78,28 @@ export default function ProfileScreen() {
     signOut();
   };
 
+  // Share a link to this closet - the OS sheet on a phone, copy on the web
+  const [shareNote, setShareNote] = useState('');
+  const shareCloset = async () => {
+    const url = `${SHARE_BASE}/user/${(profile?.username ?? '').replace('@', '')}`;
+    const message = `Check out my closet on IzyBrd`;
+    try {
+      if (Platform.OS === 'web') {
+        const nav: any = typeof navigator !== 'undefined' ? navigator : null;
+        if (nav?.share) await nav.share({ title: 'My IzyBrd closet', text: message, url });
+        else if (nav?.clipboard) {
+          await nav.clipboard.writeText(url);
+          setShareNote('Closet link copied');
+          setTimeout(() => setShareNote(''), 1800);
+        }
+      } else {
+        await Share.share({ message: `${message}\n${url}` });
+      }
+    } catch {
+      // dismissed
+    }
+  };
+
   // Each tab shows the user's own real data: active listings, sold listings,
   // purchases they made, and flips they liked.
   const toCell = (f: DbFlip) => ({
@@ -103,7 +126,9 @@ export default function ProfileScreen() {
 
         {/* Top bar */}
         <View style={s.topBar}>
-          <TouchableOpacity style={s.iconBtn}><Ionicons name="share-outline" size={22} color="#fff" /></TouchableOpacity>
+          <TouchableOpacity style={s.iconBtn} onPress={shareCloset}>
+            <Ionicons name="share-outline" size={22} color="#fff" />
+          </TouchableOpacity>
           <Text style={s.username}>{handle}</Text>
           <TouchableOpacity style={s.iconBtn} onPress={onSignOut}><Ionicons name="log-out-outline" size={24} color="#fff" /></TouchableOpacity>
         </View>
@@ -158,18 +183,22 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Promo card */}
+        {/* Promo card - tapping it actually shares the closet link */}
         {promoVisible && (
-          <View style={s.promoCard}>
+          <TouchableOpacity style={s.promoCard} activeOpacity={0.85} onPress={shareCloset}>
             <View style={s.promoInner}>
-              <Text style={s.promoTitle}>Boost your flips 🚀</Text>
-              <Text style={s.promoSub}>Share your closet link to get 3x more views</Text>
+              <Text style={s.promoTitle}>Share your closet 🚀</Text>
+              <Text style={s.promoSub}>Send your link to friends so they can shop it</Text>
             </View>
-            <TouchableOpacity onPress={() => setPromoVisible(false)}>
+            <TouchableOpacity onPress={() => setPromoVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         )}
+
+        {shareNote ? (
+          <View style={s.shareNote}><Text style={s.shareNoteTxt}>{shareNote}</Text></View>
+        ) : null}
 
         {/* Tab bar — sticky */}
         <View style={s.tabBar}>
@@ -283,4 +312,9 @@ const s = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyIcon: { fontSize: 32 },
   emptyTxt: { fontSize: 14, color: '#555' },
+  shareNote: {
+    alignSelf: 'center', backgroundColor: '#1e1e1e', borderRadius: 16,
+    paddingHorizontal: 14, paddingVertical: 8, marginBottom: 8,
+  },
+  shareNoteTxt: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });

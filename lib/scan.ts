@@ -77,18 +77,20 @@ export async function cropToBox(uri: string, box: ScanBox): Promise<string> {
   try {
     const size = await measure(uri);
     if (!size) return uri;
-    // Pad the box slightly so we don't shave the edges off the garment
+
+    // Work in edge coordinates, pad a little so we don't shave the garment,
+    // then clamp to the image. Much easier to follow than adjusting w/h.
     const pad = 0.02;
     const clamp = (v: number) => Math.min(1, Math.max(0, v));
-    const x = clamp(box.x - pad);
-    const y = clamp(box.y - pad);
-    const w = clamp(box.width + pad * 2 - Math.max(0, box.x - pad < 0 ? pad - box.x : 0));
-    const h = clamp(box.height + pad * 2 - Math.max(0, box.y - pad < 0 ? pad - box.y : 0));
+    const left = clamp(box.x - pad);
+    const top = clamp(box.y - pad);
+    const right = clamp(box.x + box.width + pad);
+    const bottom = clamp(box.y + box.height + pad);
 
-    const originX = Math.round(x * size.width);
-    const originY = Math.round(y * size.height);
-    const width = Math.round(Math.min(w * size.width, size.width - originX));
-    const height = Math.round(Math.min(h * size.height, size.height - originY));
+    const originX = Math.round(left * size.width);
+    const originY = Math.round(top * size.height);
+    const width = Math.round((right - left) * size.width);
+    const height = Math.round((bottom - top) * size.height);
     if (width < 8 || height < 8) return uri;
 
     const result = await ImageManipulator.manipulateAsync(

@@ -4,6 +4,7 @@
 // before the table exists.
 
 import { supabase } from './supabase';
+import { storageKey } from './ids';
 
 export type WardrobeItem = {
   id: string;
@@ -32,7 +33,9 @@ async function uploadWardrobePhoto(uri: string, userId: string): Promise<string 
     const arrayBuffer = await resp.arrayBuffer();
     const contentType = resp.headers.get('content-type') ?? 'image/jpeg';
     const ext = contentType.split('/')[1]?.split('+')[0] ?? 'jpg';
-    const path = `wardrobe/${userId}/${Date.now()}.${ext}`;
+    // Under the owner's folder, with an unguessable name - wardrobe photos are
+    // private to the user, so their URLs must not be walkable.
+    const path = `${userId}/wardrobe/${storageKey()}.${ext}`;
     const { error } = await supabase.storage
       .from('flip-photos')
       .upload(path, arrayBuffer, { contentType, upsert: false });
@@ -45,6 +48,15 @@ async function uploadWardrobePhoto(uri: string, userId: string): Promise<string 
 }
 
 const COLS = 'id, title, style, brand, color, size, image_url, created_at';
+
+// Postgres reports an unknown column as 42703; PostgREST also surfaces it in
+// the message. Used to tell "database not migrated yet" from a real failure.
+function isMissingColumn(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  if (error.code === '42703' || error.code === 'PGRST204') return true;
+  const m = (error.message ?? '').toLowerCase();
+  return m.includes('column') && (m.includes('does not exist') || m.includes('not find'));
+}
 
 export async function getMyWardrobe(): Promise<WardrobeItem[]> {
   const { data: auth } = await supabase.auth.getUser();
@@ -81,9 +93,10 @@ export async function addWardrobeItem(
     .insert(row)
     .select(COLS)
     .single();
-  // If the detail columns haven't been added to the database yet, retry with
-  // the original shape so adding still works.
-  if (error) {
+  // Only retry when the detail columns genuinely aren't in the database yet
+  // (Postgres 42703 = undefined column). Any other failure - auth, network,
+  // a policy rejection - should surface as itself rather than be masked.
+  if (error && isMissingColumn(error)) {
     delete row.brand; delete row.color; delete row.size;
     ({ data, error } = await supabase
       .from('wardrobe_items')
@@ -101,8 +114,8 @@ export async function updateWardrobeItem(
   fields: WardrobeDetails
 ): Promise<void> {
   const { error } = await supabase.from('wardrobe_items').update(fields).eq('id', id);
-  // Retry without the newer detail columns if they don't exist yet
-  if (error) {
+  // Retry without the newer detail columns only if they don't exist yet
+  if (error && isMissingColumn(error)) {
     const { brand, color, size, ...rest } = fields;
     if (Object.keys(rest).length > 0) {
       await supabase.from('wardrobe_items').update(rest).eq('id', id);

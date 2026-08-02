@@ -10,6 +10,7 @@ import {
   Animated,
   Platform,
   StatusBar,
+  Share,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +27,12 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 import CommentsSheet from '../../components/CommentsSheet';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Links shared out of the app point back at the deployed site
+export const SHARE_BASE =
+  Platform.OS === 'web' && typeof window !== 'undefined'
+    ? window.location.origin
+    : 'https://izybrd.netlify.app';
 
 // --- Mock Data (language from the brief: "the flip", city of origin, story) ----
 const FLIPS = [
@@ -144,6 +151,7 @@ function FlipCard({ item }: { item: FeedItem }) {
   const [likes, setLikes] = useState(item.likes);
   const [comments, setComments] = useState(item.comments);
   const [showComments, setShowComments] = useState(false);
+  const [shareNote, setShareNote] = useState('');
   const sold = useSyncExternalStore(subscribeLocalOrders, () => isLocalSold(item.id), () => isLocalSold(item.id));
 
   // Keep the comment count live (works for real flips and seeded demo flips).
@@ -186,6 +194,27 @@ function FlipCard({ item }: { item: FeedItem }) {
     const next = !saved;
     setSaved(next);
     (next ? save(item.id) : unsave(item.id)).catch(() => setSaved(!next));
+  };
+
+  // Share the listing - the OS sheet on a phone, a copied link on the web
+  const shareFlip = async () => {
+    const url = `${SHARE_BASE}/flip/${item.id}`;
+    const message = `${item.title} - $${item.price} on IzyBrd`;
+    try {
+      if (Platform.OS === 'web') {
+        const nav: any = typeof navigator !== 'undefined' ? navigator : null;
+        if (nav?.share) await nav.share({ title: item.title, text: message, url });
+        else if (nav?.clipboard) {
+          await nav.clipboard.writeText(url);
+          setShareNote('Link copied');
+          setTimeout(() => setShareNote(''), 1800);
+        }
+      } else {
+        await Share.share({ message: `${message}\n${url}` });
+      }
+    } catch {
+      // the user dismissed the share sheet
+    }
   };
 
   const filledStars = Math.round(item.rating);
@@ -250,7 +279,7 @@ function FlipCard({ item }: { item: FeedItem }) {
 
         <ActionBtn icon="heart-outline" iconActive="heart" count={likes} onPress={toggleLike} active={liked} />
         <ActionBtn icon="chatbubble-outline" count={comments} onPress={() => setShowComments(true)} />
-        <ActionBtn icon="arrow-redo-outline" onPress={() => {}} />
+        <ActionBtn icon="arrow-redo-outline" onPress={shareFlip} />
         <ActionBtn icon="bookmark-outline" iconActive="bookmark" onPress={toggleSave} active={saved} />
       </View>
 
@@ -309,12 +338,18 @@ function FlipCard({ item }: { item: FeedItem }) {
               activeOpacity={0.85}
               onPress={() => router.push(`/flip/${item.id}` as any)}
             >
-              <Text style={styles.buyBtnText}>Buy the flip · ${item.price}</Text>
+              <Text style={styles.buyBtnText}>Buy · ${item.price}</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
     </View>
+
+      {shareNote ? (
+        <View style={styles.shareNote} pointerEvents="none">
+          <Text style={styles.shareNoteTxt}>{shareNote}</Text>
+        </View>
+      ) : null}
 
       <CommentsSheet
         flipId={item.id}
@@ -589,6 +624,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
+  shareNote: {
+    position: 'absolute',
+    bottom: 120,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+  },
+  shareNoteTxt: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   // Bottom info overlay
   infoOverlay: {

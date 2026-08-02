@@ -366,7 +366,7 @@ export default function FlipDetailScreen() {
               activeOpacity={0.85}
               onPress={() => router.push(`/checkout/${id ?? '1'}` as any)}
             >
-              <Text style={s.buyText}>Buy the flip · ${total}</Text>
+              <Text style={s.buyText}>Buy · ${total}</Text>
             </TouchableOpacity>
           </View>
         )}

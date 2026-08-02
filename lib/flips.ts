@@ -3,6 +3,7 @@
 // insert/update their own flips; everyone can read.
 
 import { supabase } from './supabase';
+import { storageKey } from './ids';
 
 // Shown when a flip has no photo, so a card never renders as a black box.
 export const DEFAULT_FLIP_IMAGE =
@@ -54,7 +55,9 @@ async function uploadMedia(
     const arrayBuffer = await resp.arrayBuffer();
     const contentType = resp.headers.get('content-type') ?? fallbackType;
     const ext = contentType.split('/')[1]?.split('+')[0] ?? 'bin';
-    const path = `${userId}/${Date.now()}.${ext}`;
+    // Every upload lives under the owner's folder (the storage policy enforces
+    // this) with an unguessable name so public URLs can't be enumerated.
+    const path = `${userId}/${storageKey()}.${ext}`;
     const { error } = await supabase.storage
       .from('flip-photos')
       .upload(path, arrayBuffer, { contentType, upsert: false });

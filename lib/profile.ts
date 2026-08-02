@@ -1,6 +1,7 @@
 // The signed-in user's profile (from the `profiles` table) plus sign-out.
 
 import { supabase } from './supabase';
+import { storageKey } from './ids';
 
 export type Profile = {
   id: string;
@@ -56,7 +57,7 @@ export async function uploadAvatar(uri: string): Promise<string | null> {
     const arrayBuffer = await resp.arrayBuffer();
     const contentType = resp.headers.get('content-type') ?? 'image/jpeg';
     const ext = contentType.split('/')[1]?.split('+')[0] ?? 'jpg';
-    const path = `avatars/${userId}/${Date.now()}.${ext}`;
+    const path = `${userId}/avatars/${storageKey()}.${ext}`;
     const { error } = await supabase.storage
       .from('flip-photos')
       .upload(path, arrayBuffer, { contentType, upsert: false });

@@ -220,10 +220,33 @@ drop policy if exists "flip photos are public" on storage.objects;
 create policy "flip photos are public"
   on storage.objects for select using (bucket_id = 'flip-photos');
 
+-- Uploads are confined to a folder named after the uploader, so one user can
+-- never write into another user's space. The app builds every path as
+-- "<user id>/..." (see lib/flips.ts, lib/profile.ts, lib/wardrobe.ts).
 drop policy if exists "authenticated users can upload flip photos" on storage.objects;
 create policy "authenticated users can upload flip photos"
   on storage.objects for insert to authenticated
-  with check (bucket_id = 'flip-photos');
+  with check (
+    bucket_id = 'flip-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Owners may replace or remove their own files; nobody else can.
+drop policy if exists "users manage their own flip photos" on storage.objects;
+create policy "users manage their own flip photos"
+  on storage.objects for update to authenticated
+  using (
+    bucket_id = 'flip-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "users can delete their own flip photos" on storage.objects;
+create policy "users can delete their own flip photos"
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'flip-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
 
 -- ---------------------------------------------------------------------------
 -- follows: who follows whom (one row per follower -> following pair)

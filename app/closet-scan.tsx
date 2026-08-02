@@ -3,7 +3,7 @@
 // first - edit a title, retry a bad read, delete what you don't want, then add
 // them one by one or all at once. Nothing is saved until you choose.
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Image, TextInput,
   StyleSheet, ActivityIndicator, useWindowDimensions,
@@ -116,8 +116,13 @@ export default function ClosetScanScreen() {
     }
   };
 
+  // Keys currently being saved - guards against a double-tap on one item
+  const inFlight = useRef<Set<string>>(new Set());
+
   const addOne = async (item: Found) => {
     if (item.state === 'added' || item.state === 'adding') return;
+    if (inFlight.current.has(item.key)) return;
+    inFlight.current.add(item.key);
     setItem(item.key, { state: 'adding' });
     try {
       await addWardrobeItem(item.cropUri, {
@@ -129,15 +134,26 @@ export default function ClosetScanScreen() {
       setItem(item.key, { state: 'added' });
     } catch {
       setItem(item.key, { state: 'idle' });
+    } finally {
+      inFlight.current.delete(item.key);
     }
   };
 
+  // A ref guards the loop: state updates are async, so a fast double-tap could
+  // otherwise start two runs and add every item twice.
+  const addingAllRef = useRef(false);
   const addAll = async () => {
+    if (addingAllRef.current) return;
+    addingAllRef.current = true;
     setAddingAll(true);
-    for (const item of items) {
-      if (item.state !== 'added') await addOne(item);
+    try {
+      for (const item of items) {
+        if (item.state !== 'added') await addOne(item);
+      }
+    } finally {
+      addingAllRef.current = false;
+      setAddingAll(false);
     }
-    setAddingAll(false);
   };
 
   const removeOne = (key: string) => setItems(prev => prev.filter(i => i.key !== key));
