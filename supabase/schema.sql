@@ -92,20 +92,47 @@ alter publication supabase_realtime add table public.messages;
 -- ---------------------------------------------------------------------------
 -- Auto-create a profile row whenever a new auth user signs up
 -- ---------------------------------------------------------------------------
+-- Creating the profile must never block the signup itself. Usernames are
+-- unique, so a taken handle used to fail the whole account creation with a
+-- raw constraint error; now we settle on a free variant instead, and fall
+-- back to a bare profile row if anything else goes wrong.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
+declare
+  base_handle text;
+  handle      text;
+  n           int := 0;
 begin
+  base_handle := nullif(trim(new.raw_user_meta_data ->> 'username'), '');
+  if base_handle is null then
+    base_handle := split_part(coalesce(new.email, ''), '@', 1);
+  end if;
+  base_handle := regexp_replace(lower(base_handle), '[^a-z0-9_]', '', 'g');
+  if base_handle = '' then
+    base_handle := 'user';
+  end if;
+
+  handle := base_handle;
+  while exists (select 1 from public.profiles where username = handle) loop
+    n := n + 1;
+    handle := base_handle || n::text;
+  end loop;
+
   insert into public.profiles (id, username, full_name, college, major)
   values (
     new.id,
-    new.raw_user_meta_data ->> 'username',
+    handle,
     new.raw_user_meta_data ->> 'full_name',
     new.raw_user_meta_data ->> 'college',
     new.raw_user_meta_data ->> 'major'
   );
+  return new;
+exception when others then
+  -- Last resort: an account with no profile details beats a failed signup.
+  insert into public.profiles (id) values (new.id) on conflict (id) do nothing;
   return new;
 end;
 $$;

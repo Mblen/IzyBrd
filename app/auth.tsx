@@ -16,6 +16,31 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 type Mode = 'signin' | 'signup';
 
+// Turn backend errors into something a person can act on. Without this a
+// taken handle surfaces as "duplicate key value violates unique constraint".
+function friendlyAuthError(e: any): string {
+  const raw = (e?.message ?? '').toLowerCase();
+  if (raw.includes('profiles_username_key') || raw.includes('duplicate key')) {
+    return 'That handle is already taken. Try another one.';
+  }
+  if (raw.includes('already registered') || raw.includes('already been registered')) {
+    return 'There is already an account with this email. Try signing in instead.';
+  }
+  if (raw.includes('invalid login credentials')) {
+    return 'That email or password is not right. Check them and try again.';
+  }
+  if (raw.includes('password') && raw.includes('at least')) {
+    return 'Your password needs to be at least 6 characters.';
+  }
+  if (raw.includes('unable to validate email') || raw.includes('invalid email')) {
+    return 'That email address does not look right.';
+  }
+  if (raw.includes('network') || raw.includes('fetch')) {
+    return 'Could not reach the server. Check your connection and try again.';
+  }
+  return e?.message ?? 'Something went wrong. Try again.';
+}
+
 export default function AuthScreen() {
   const [mode, setMode] = useState<Mode>('signin');
   const [username, setUsername] = useState('');
@@ -44,10 +69,24 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       if (signingUp) {
+        // Handles must be unique. Check first so we can say so in plain words
+        // instead of letting the database reject the signup with a raw error.
+        const handle = username.trim().toLowerCase();
+        const { data: taken } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', handle)
+          .maybeSingle();
+        if (taken) {
+          setError('That handle is already taken. Try another one.');
+          setLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username } },
+          options: { data: { username: handle } },
         });
         if (error) throw error;
         // If email confirmation is on, there is no session yet.
@@ -63,7 +102,7 @@ export default function AuthScreen() {
         router.replace('/(tabs)' as any);
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Something went wrong. Try again.');
+      setError(friendlyAuthError(e));
     } finally {
       setLoading(false);
     }

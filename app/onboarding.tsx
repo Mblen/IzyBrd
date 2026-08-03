@@ -38,9 +38,15 @@ export default function OnboardingScreen() {
   const filteredColleges = COLLEGES.filter(c =>
     c.toLowerCase().includes(collegeQuery.toLowerCase())
   );
+  // Anyone can use IzyBrd, so a school that isn't on the list can be typed in
+  // freely - and the whole step can be skipped.
+  const typedSchool = collegeQuery.trim();
+  const showCustomOption =
+    typedSchool.length >= 3 &&
+    !COLLEGES.some(c => c.toLowerCase() === typedSchool.toLowerCase());
 
-  const canContinue =
-    step === 0 || (step === 1 && college !== '') || (step === 2 && username.length >= 3);
+  // The school is optional; only the handle is required.
+  const canContinue = step !== 2 || username.length >= 3;
 
   const finish = () => {
     AsyncStorage.setItem('onboarded', 'true');
@@ -93,14 +99,14 @@ export default function OnboardingScreen() {
               <Text style={s.logo}>IzyBrd</Text>
               <Text style={s.tagline}>Every sweatshirt has a story.</Text>
               <Text style={s.welcomeSub}>
-                Buy and sell sweatshirts from students at your school and across the country.
-                One piece at a time.
+                Buy and sell sweatshirts with people near you and across the
+                country. One piece at a time.
               </Text>
             </View>
             <View style={s.bulletList}>
               {[
                 ['shirt-outline', 'Only sweatshirts. Nothing else.'],
-                ['school-outline', 'Built for college campuses.'],
+                ['people-outline', 'Open to everyone - students and beyond.'],
                 ['flash-outline', 'List a flip in under a minute.'],
               ].map(([icon, label]) => (
                 <View key={label} style={s.bulletRow}>
@@ -115,19 +121,39 @@ export default function OnboardingScreen() {
         {/* Step 1 — College */}
         {step === 1 && (
           <View style={s.body}>
-            <Text style={s.stepTitle}>Where do you go?</Text>
-            <Text style={s.stepSub}>Your school unlocks campus-only drops and local flips.</Text>
+            <Text style={s.stepTitle}>Where do you study?</Text>
+            <Text style={s.stepSub}>
+              Optional - it helps you find flips near you. Skip it if you are
+              not a student.
+            </Text>
             <View style={s.searchBar}>
               <Ionicons name="search" size={16} color="#888" />
               <TextInput
                 style={s.searchInput}
-                placeholder="Search your school"
+                placeholder="Search or type your school"
                 placeholderTextColor="#777"
                 value={collegeQuery}
                 onChangeText={setCollegeQuery}
               />
             </View>
             <ScrollView style={s.flex} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {/* Anything can be typed in, not just the listed schools */}
+              {showCustomOption && (
+                <TouchableOpacity
+                  style={[s.collegeRow, college === typedSchool && s.collegeRowOn]}
+                  onPress={() => setCollege(typedSchool)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={college === typedSchool ? 'checkmark-circle' : 'add-circle-outline'}
+                    size={18}
+                    color={college === typedSchool ? '#fff' : '#888'}
+                  />
+                  <Text style={[s.collegeTxt, college === typedSchool && s.collegeTxtOn]}>
+                    Use "{typedSchool}"
+                  </Text>
+                </TouchableOpacity>
+              )}
               {filteredColleges.map(c => (
                 <TouchableOpacity
                   key={c}
@@ -143,10 +169,17 @@ export default function OnboardingScreen() {
                   <Text style={[s.collegeTxt, college === c && s.collegeTxtOn]}>{c}</Text>
                 </TouchableOpacity>
               ))}
-              {filteredColleges.length === 0 && (
-                <Text style={s.noMatch}>No schools found. Try another search.</Text>
+              {filteredColleges.length === 0 && !showCustomOption && (
+                <Text style={s.noMatch}>Keep typing to add your own school.</Text>
               )}
             </ScrollView>
+            <TouchableOpacity
+              style={s.skipRow}
+              onPress={() => { setCollege(''); next(); }}
+              activeOpacity={0.7}
+            >
+              <Text style={s.skipStudentTxt}>I am not a student - skip</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -243,6 +276,8 @@ const s = StyleSheet.create({
   collegeRowOn: { backgroundColor: '#1c1c1c' },
   collegeTxt: { fontSize: 15, color: 'rgba(255,255,255,0.75)', flex: 1 },
   collegeTxtOn: { color: '#fff', fontWeight: '700' },
+  skipRow: { alignItems: 'center', paddingVertical: 12 },
+  skipStudentTxt: { fontSize: 13, color: '#9aa0ff', fontWeight: '600' },
   noMatch: { fontSize: 13, color: '#666', textAlign: 'center', paddingVertical: 30 },
 
   // Username
