@@ -24,6 +24,8 @@ import { isRealFlipId } from '../../lib/ids';
 import { getLikeCount, hasLiked, like, unlike, subscribeLikes, hasSaved, save, unsave } from '../../lib/engagement';
 import { getCommentCount, subscribeComments } from '../../lib/comments';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { requireAuth } from '../../lib/session';
 import CommentsSheet from '../../components/CommentsSheet';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -71,8 +73,10 @@ const FLIPS = [
   },
 ];
 
-// For You sits on the right and is the default tab (TikTok-style)
-const FEED_TABS = ['Following', 'Local', 'For You'];
+// For You sits on the right and is the default tab (TikTok-style). There were
+// three tabs, but "Local" showed exactly the same listings as "For You" - a
+// choice that cost the reader attention and gave nothing back.
+const FEED_TABS = ['Following', 'For You'];
 const FOLLOWING_TAB = 0;
 const FOR_YOU_TAB = FEED_TABS.length - 1;
 
@@ -175,7 +179,8 @@ function FlipCard({ item }: { item: FeedItem }) {
     return () => { active = false; unsub(); };
   }, [item.id]);
 
-  const toggleLike = () => {
+  const toggleLike = async () => {
+    if (!(await requireAuth())) return;
     if (!isReal) {
       setLiked(v => { setLikes(l => (v ? l - 1 : l + 1)); return !v; });
       return;
@@ -189,7 +194,8 @@ function FlipCard({ item }: { item: FeedItem }) {
     });
   };
 
-  const toggleSave = () => {
+  const toggleSave = async () => {
+    if (!(await requireAuth())) return;
     if (!isReal) { setSaved(v => !v); return; }
     const next = !saved;
     setSaved(next);
@@ -240,6 +246,14 @@ function FlipCard({ item }: { item: FeedItem }) {
         />
       )}
 
+      {/* The whole photo opens the listing; the buttons above it still win
+          their own taps because they render later. */}
+      <TouchableOpacity
+        style={[styles.cardImage, { width: cardW, height: winH }]}
+        activeOpacity={1}
+        onPress={() => router.push(`/flip/${item.id}` as any)}
+      />
+
       {/* Gradient overlays — real fades instead of flat boxes */}
       <LinearGradient
         colors={['rgba(0,0,0,0.55)', 'transparent']}
@@ -270,78 +284,45 @@ function FlipCard({ item }: { item: FeedItem }) {
               </Text>
             </View>
           )}
-          <View style={styles.followDot}>
-            <Text style={styles.followDotText}>+</Text>
-          </View>
         </TouchableOpacity>
 
         <View style={{ height: 16 }} />
 
         <ActionBtn icon="heart-outline" iconActive="heart" count={likes} onPress={toggleLike} active={liked} />
-        <ActionBtn icon="chatbubble-outline" count={comments} onPress={() => setShowComments(true)} />
+        <ActionBtn
+          icon="chatbubble-outline"
+          count={comments}
+          onPress={async () => { if (await requireAuth()) setShowComments(true); }}
+        />
         <ActionBtn icon="arrow-redo-outline" onPress={shareFlip} />
         <ActionBtn icon="bookmark-outline" iconActive="bookmark" onPress={toggleSave} active={saved} />
       </View>
 
-      {/* Bottom info overlay */}
+      {/* Bottom info overlay - deliberately four things: who, what, how much,
+          and the one action. Size, condition, city, rating and the story all
+          live on the listing page, a tap away. */}
       <View style={styles.infoOverlay}>
-        {/* Seller + rating */}
-        <View style={styles.sellerRow}>
-          <TouchableOpacity onPress={() => router.push(`/user/${item.seller.replace('@', '')}` as any)}>
-            <Text style={styles.seller}>{item.seller}</Text>
-          </TouchableOpacity>
-          <View style={styles.cityPill}>
-            <Ionicons name="location-sharp" size={10} color="rgba(255,255,255,0.85)" />
-            <Text style={styles.cityText}>{item.city}</Text>
-          </View>
-        </View>
+        <TouchableOpacity onPress={() => router.push(`/user/${item.seller.replace('@', '')}` as any)}>
+          <Text style={styles.seller}>{item.seller}</Text>
+        </TouchableOpacity>
 
-        {item.rating > 0 && (
-          <View style={styles.ratingRow}>
-            <Text style={styles.stars}>{stars}</Text>
-            <Text style={styles.ratingText}>
-              {item.rating.toFixed(1)} ({item.reviews} reviews)
-            </Text>
-          </View>
-        )}
-
-        {/* Tags */}
-        <View style={styles.tagsRow}>
-          {[item.style, item.size, item.condition].map((tag) => (
-            <View key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Title — tap goes to flip detail */}
         <TouchableOpacity activeOpacity={0.8} onPress={() => router.push(`/flip/${item.id}` as any)}>
           <Text style={styles.title}>{item.title}</Text>
         </TouchableOpacity>
 
-        {/* Story — the key differentiator per the brief */}
-        <Text style={styles.story} numberOfLines={3}>{item.story}</Text>
-
-        {/* Price + buy button */}
-        <View style={styles.priceRow}>
-          <View>
-            <Text style={styles.priceAmount}>${item.price}</Text>
-            <Text style={styles.priceShipping}>+ shipping</Text>
+        {sold ? (
+          <View style={[styles.buyBtn, styles.soldBtn]}>
+            <Text style={styles.soldBtnText}>Sold</Text>
           </View>
-          {sold ? (
-            <View style={[styles.buyBtn, styles.soldBtn]}>
-              <Text style={styles.soldBtnText}>Sold</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.buyBtn}
-              activeOpacity={0.85}
-              onPress={() => router.push(`/flip/${item.id}` as any)}
-            >
-              <Text style={styles.buyBtnText}>Buy · ${item.price}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.buyBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push(`/flip/${item.id}` as any)}
+          >
+            <Text style={styles.buyBtnText}>Buy · ${item.price}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
 
@@ -406,6 +387,20 @@ export default function HomeScreen() {
     }, [activeTab])
   );
 
+  // Nothing on screen says the feed scrolls, so show a one-time nudge. Older
+  // and first-time users otherwise see a single item and assume that's all.
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
+  useEffect(() => {
+    let live = true;
+    AsyncStorage.getItem('seenSwipeHint').then(seen => {
+      if (!live || seen === 'true') return;
+      setShowSwipeHint(true);
+      AsyncStorage.setItem('seenSwipeHint', 'true').catch(() => {});
+      setTimeout(() => { if (live) setShowSwipeHint(false); }, 4000);
+    }).catch(() => {});
+    return () => { live = false; };
+  }, []);
+
   // When the newest flip changes (e.g. you just posted one), snap to the top
   // so it's the first card shown. Runs after the new data has rendered.
   useEffect(() => {
@@ -443,6 +438,13 @@ export default function HomeScreen() {
           </View>
         }
       />
+
+      {showSwipeHint && feedData.length > 1 && (
+        <View style={styles.swipeHint} pointerEvents="none">
+          <Ionicons name="chevron-up" size={18} color="#fff" />
+          <Text style={styles.swipeHintTxt}>Swipe up for more</Text>
+        </View>
+      )}
 
       {/* Feed tabs — pinned at top, overlaid on feed */}
       <SafeAreaView style={styles.topBar} edges={['top']} pointerEvents="box-none">
@@ -634,6 +636,19 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   shareNoteTxt: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  swipeHint: {
+    position: 'absolute',
+    bottom: 110,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  swipeHintTxt: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   // Bottom info overlay
   infoOverlay: {

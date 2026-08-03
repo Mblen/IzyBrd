@@ -10,7 +10,7 @@ import {
   useWindowDimensions, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { scanFrame, ScanResult } from '../lib/scan';
@@ -73,6 +73,11 @@ export default function CameraScanScreen() {
   const { width: winW } = useWindowDimensions();
   const colW = Math.min(winW, 480);
 
+  // Opened from the Sell tab, the scanner hands off to the listing form
+  // instead of saving to the wardrobe.
+  const { target } = useLocalSearchParams<{ target?: string }>();
+  const forSelling = target === 'sell';
+
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [ready, setReady] = useState(false);
@@ -130,6 +135,20 @@ export default function CameraScanScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [permission?.granted, ready, autoScan]);
 
+  // Hand the identified garment to the listing form, already filled in
+  const sellThis = () => {
+    if (!result) return;
+    router.replace({
+      pathname: '/(tabs)/sell',
+      params: {
+        prefillImage: lastFrameUri ?? '',
+        prefillTitle: result.title ?? '',
+        prefillStyle: result.style ?? '',
+        prefillBrand: result.brand_guess ?? '',
+      },
+    } as any);
+  };
+
   const saveToWardrobe = async () => {
     if (!result || !lastFrameUri || saving) return;
     setSaving(true);
@@ -176,8 +195,13 @@ export default function CameraScanScreen() {
             <TouchableOpacity style={s.permBtn} onPress={requestPermission} activeOpacity={0.85}>
               <Text style={s.permBtnTxt}>Allow camera</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={s.permAlt}>Use photo scan instead</Text>
+            {/* Never a dead end: selling still reaches the form without a camera */}
+            <TouchableOpacity
+              onPress={() => (forSelling ? router.replace('/(tabs)/sell' as any) : router.back())}
+            >
+              <Text style={s.permAlt}>
+                {forSelling ? 'Type the details myself' : 'Use photo scan instead'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -241,17 +265,24 @@ export default function CameraScanScreen() {
                 {[result.style, result.color, result.brand_guess].filter(Boolean).join(' · ')}
               </Text>
               <View style={s.resultActions}>
-                <TouchableOpacity
-                  style={[s.saveBtn, (saving || saved) && s.saveBtnOff]}
-                  onPress={saveToWardrobe}
-                  disabled={saving || saved}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name={saved ? 'checkmark' : 'add'} size={16} color={saved ? '#888' : '#000'} />
-                  <Text style={[s.saveBtnTxt, saved && s.saveBtnTxtOff]}>
-                    {saving ? 'Saving…' : saved ? 'In your wardrobe' : 'Add to wardrobe'}
-                  </Text>
-                </TouchableOpacity>
+                {forSelling ? (
+                  <TouchableOpacity style={s.saveBtn} onPress={sellThis} activeOpacity={0.85}>
+                    <Ionicons name="pricetag" size={16} color="#000" />
+                    <Text style={s.saveBtnTxt}>Sell this</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[s.saveBtn, (saving || saved) && s.saveBtnOff]}
+                    onPress={saveToWardrobe}
+                    disabled={saving || saved}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name={saved ? 'checkmark' : 'add'} size={16} color={saved ? '#888' : '#000'} />
+                    <Text style={[s.saveBtnTxt, saved && s.saveBtnTxtOff]}>
+                      {saving ? 'Saving…' : saved ? 'In your wardrobe' : 'Add to wardrobe'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity style={s.rescanBtn} onPress={captureAndScan} activeOpacity={0.85}>
                   <Ionicons name="refresh" size={18} color="#fff" />
                 </TouchableOpacity>
@@ -267,6 +298,17 @@ export default function CameraScanScreen() {
                     : 'Point the camera at a sweatshirt…'}
               </Text>
             </View>
+          )}
+
+          {/* Always a way out of the camera */}
+          {forSelling && (
+            <TouchableOpacity
+              style={s.manualLink}
+              activeOpacity={0.7}
+              onPress={() => router.replace('/(tabs)/sell' as any)}
+            >
+              <Text style={s.manualTxt}>Skip - type the details myself</Text>
+            </TouchableOpacity>
           )}
         </SafeAreaView>
       </View>
@@ -316,6 +358,8 @@ const s = StyleSheet.create({
     paddingVertical: 14, alignItems: 'center',
   },
   hintTxt: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
+  manualLink: { alignItems: 'center', paddingVertical: 12 },
+  manualTxt: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: '600' },
 
   resultCard: {
     backgroundColor: 'rgba(10,10,10,0.88)', borderRadius: 18, padding: 14,

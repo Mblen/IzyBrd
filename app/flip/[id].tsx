@@ -24,6 +24,7 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
 import { getCommentCount, subscribeComments } from '../../lib/comments';
 import { getSellerRating, SellerRating } from '../../lib/reviews';
+import { requireAuth } from '../../lib/session';
 import CommentsSheet from '../../components/CommentsSheet';
 
 type FlipView = {
@@ -347,7 +348,8 @@ export default function FlipDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Sticky bottom bar */}
+      {/* Sticky bottom bar. One primary action: making an offer is the quieter
+          alternative underneath, not a button competing for the same tap. */}
       <SafeAreaView edges={['bottom']} style={s.bottomBarWrap}>
         {sold ? (
           <View style={s.bottomBar}>
@@ -358,15 +360,21 @@ export default function FlipDetailScreen() {
           </View>
         ) : (
           <View style={s.bottomBar}>
-            <TouchableOpacity style={s.offerBtn} activeOpacity={0.8} onPress={() => setOfferVisible(true)}>
-              <Text style={s.offerText}>Make offer</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={s.buyBtn}
               activeOpacity={0.85}
-              onPress={() => router.push(`/checkout/${id ?? '1'}` as any)}
+              onPress={async () => {
+                if (await requireAuth()) router.push(`/checkout/${id ?? '1'}` as any);
+              }}
             >
               <Text style={s.buyText}>Buy · ${total}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.offerLink}
+              activeOpacity={0.7}
+              onPress={async () => { if (await requireAuth()) setOfferVisible(true); }}
+            >
+              <Text style={s.offerLinkText}>or make an offer</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -591,28 +599,19 @@ const s = StyleSheet.create({
     borderTopColor: '#1e1e1e',
   },
   bottomBar: {
-    flexDirection: 'row',
-    gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 6,
     width: '100%',
     maxWidth: 480,
     alignSelf: 'center',
   },
-  offerBtn: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: '#fff',
-    borderRadius: 28,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  offerText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  offerLink: { alignItems: 'center', paddingVertical: 10 },
+  offerLinkText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
   buyBtn: {
-    flex: 1.4,
     backgroundColor: '#fff',
     borderRadius: 28,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
   },
   buyText: { fontSize: 14, fontWeight: '800', color: '#000', letterSpacing: 0.2 },

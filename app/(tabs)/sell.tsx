@@ -110,6 +110,7 @@ export default function SellScreen() {
   const [city, setCity] = useState('');
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMore, setShowMore] = useState(false);
 
   // "Flip the bird" from My Wardrobe lands here with the item pre-filled
   const prefill = useLocalSearchParams<{
@@ -124,9 +125,16 @@ export default function SellScreen() {
     if (prefill.prefillSize && SIZES.includes(prefill.prefillSize)) setSize(prefill.prefillSize);
   }, [prefill.prefillImage, prefill.prefillTitle, prefill.prefillStyle, prefill.prefillBrand, prefill.prefillSize]);
 
-  const canPost =
-    !posting &&
-    title.length > 0 && price.length > 0 && style.length > 0 && size.length > 0 && condition.length > 0;
+  // Only a photo, a name and a price are needed to post. Everything else has
+  // a sensible default so nobody is blocked by a form.
+  const canPost = !posting && photos.length > 0 && title.trim().length > 0 && price.length > 0;
+
+  // Tells the person exactly what is still missing, instead of a greyed-out
+  // button and five asterisks they have to decode.
+  const missing = !photos.length ? 'Add a photo to post'
+    : !title.trim() ? 'Name it to post'
+    : !price ? 'Add a price to post'
+    : '';
 
   const pickPhotos = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -170,8 +178,8 @@ export default function SellScreen() {
         price: Number(price),
         story: story.trim(),
         style,
-        size,
-        condition,
+        size: size || 'One Size',
+        condition: condition || 'Good',
         brand: brand.trim(),
         city: city.trim() || 'Somewhere',
         imageUri: photos[0] ?? '',
@@ -280,12 +288,12 @@ export default function SellScreen() {
 
           <View style={styles.divider} />
 
-          {/* Title */}
+          {/* The only two things typed in to post */}
           <View style={styles.field}>
-            <Label text="Title" required />
+            <Label text="What is it?" />
             <TextInput
               style={styles.input}
-              placeholder={`e.g. "Compton Hoodie" or "Brooklyn Crew"`}
+              placeholder={`e.g. "Navy Champion Crew"`}
               placeholderTextColor="#aaa"
               value={title}
               onChangeText={setTitle}
@@ -293,31 +301,8 @@ export default function SellScreen() {
             />
           </View>
 
-          {/* Story — the differentiator */}
           <View style={styles.field}>
-            <Label text="The story" />
-            <Text style={styles.fieldHint}>
-              Where did you get it? Why does it matter? This is what makes your flip different.
-            </Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              placeholder={`"Got this at a pop-up in LA when I was 16. Size M, barely worn. Time to let it go."`}
-              placeholderTextColor="#aaa"
-              value={story}
-              onChangeText={setStory}
-              multiline
-              numberOfLines={4}
-              maxLength={280}
-              textAlignVertical="top"
-            />
-            <Text style={styles.charCount}>{story.length}/280</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Price */}
-          <View style={styles.field}>
-            <Label text="Price" required />
+            <Label text="Price" />
             <View style={styles.priceInputWrap}>
               <Text style={styles.priceDollar}>$</Text>
               <TextInput
@@ -330,56 +315,85 @@ export default function SellScreen() {
                 maxLength={5}
               />
             </View>
-            <Text style={styles.fieldHint}>+ buyer covers shipping (cheapest option shown first)</Text>
+            <Text style={styles.fieldHint}>The buyer pays shipping on top</Text>
           </View>
 
-          <View style={styles.divider} />
+          {/* Everything else is optional and folded away, so the screen asks
+              for three things instead of nine. */}
+          <TouchableOpacity
+            style={styles.moreToggle}
+            activeOpacity={0.75}
+            onPress={() => setShowMore(v => !v)}
+          >
+            <Text style={styles.moreToggleTxt}>
+              {showMore ? 'Hide extra details' : 'Add more details (optional)'}
+            </Text>
+            <Ionicons name={showMore ? 'chevron-up' : 'chevron-down'} size={16} color="#888" />
+          </TouchableOpacity>
 
-          {/* Style */}
-          <View style={styles.field}>
-            <Label text="Style" required />
-            <ChipGroup options={STYLES} value={style} onChange={setStyle} />
-          </View>
+          {showMore && (
+            <View>
+              <View style={styles.field}>
+                <Label text="The story" />
+                <Text style={styles.fieldHint}>
+                  Where did you get it? This is what makes your flip different.
+                </Text>
+                <TextInput
+                  style={[styles.input, styles.inputMultiline]}
+                  placeholder={`"Got this at a pop-up in LA when I was 16. Barely worn."`}
+                  placeholderTextColor="#aaa"
+                  value={story}
+                  onChangeText={setStory}
+                  multiline
+                  numberOfLines={4}
+                  maxLength={280}
+                  textAlignVertical="top"
+                />
+              </View>
 
-          {/* Size */}
-          <View style={styles.field}>
-            <Label text="Size" required />
-            <ChipGroup options={SIZES} value={size} onChange={setSize} />
-          </View>
+              <View style={styles.field}>
+                <Label text="Style" />
+                <ChipGroup options={STYLES} value={style} onChange={setStyle} />
+              </View>
 
-          {/* Condition */}
-          <View style={styles.field}>
-            <Label text="Condition" required />
-            <ChipGroup options={CONDITIONS} value={condition} onChange={setCondition} />
-          </View>
+              <View style={styles.field}>
+                <Label text="Size" />
+                <ChipGroup options={SIZES} value={size} onChange={setSize} />
+              </View>
 
-          <View style={styles.divider} />
+              <View style={styles.field}>
+                <Label text="Condition" />
+                <ChipGroup options={CONDITIONS} value={condition} onChange={setCondition} />
+              </View>
 
-          {/* Brand */}
-          <View style={styles.field}>
-            <Label text="Brand" />
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Champion, Nike, Arc'teryx, Unknown"
-              placeholderTextColor="#aaa"
-              value={brand}
-              onChangeText={setBrand}
-              maxLength={40}
-            />
-          </View>
+              <View style={styles.field}>
+                <Label text="Brand" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Champion, Nike"
+                  placeholderTextColor="#aaa"
+                  value={brand}
+                  onChangeText={setBrand}
+                  maxLength={40}
+                />
+              </View>
 
-          {/* City */}
-          <View style={styles.field}>
-            <Label text="City" />
-            <TextInput
-              style={styles.input}
-              placeholder="Where is this flip from? e.g. Brooklyn, NY"
-              placeholderTextColor="#aaa"
-              value={city}
-              onChangeText={setCity}
-              maxLength={50}
-            />
-          </View>
+              <View style={styles.field}>
+                <Label text="City" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Miami, FL"
+                  placeholderTextColor="#aaa"
+                  value={city}
+                  onChangeText={setCity}
+                  maxLength={50}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Says what is still missing rather than leaving Post greyed out */}
+          {missing ? <Text style={styles.missingTxt}>{missing}</Text> : null}
 
           {/* Bottom padding */}
           <View style={{ height: 48 }} />
@@ -461,6 +475,14 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
+  },
+  moreToggle: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 14, marginTop: 4,
+  },
+  moreToggleTxt: { fontSize: 14, color: '#888', fontWeight: '600' },
+  missingTxt: {
+    fontSize: 13, color: '#888', textAlign: 'center', marginTop: 6,
   },
 
   // Photos

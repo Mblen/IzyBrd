@@ -10,7 +10,9 @@ import { getMyOffers, OfferItem } from '../../lib/offers';
 import { getMyOrders, OrderItem } from '../../lib/orders';
 import { getMyActivity, ActivityItem } from '../../lib/activity';
 
-const TABS = ['All', 'Messages', 'Offers', 'Orders', 'Activity'];
+// Two tabs, not five. Offers and orders are things that happened to you, not
+// conversations, so they belong with the rest of the activity.
+const TABS = ['Messages', 'Activity'];
 
 const ITEMS = [
   {
@@ -62,7 +64,7 @@ function typeIcon(type: string): keyof typeof Ionicons.glyphMap {
 }
 
 export default function InboxScreen() {
-  const [active, setActive] = useState('All');
+  const [active, setActive] = useState('Messages');
   const [sentOffers, setSentOffers] = useState<OfferItem[]>([]);
   const [myOrders, setMyOrders] = useState<OrderItem[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
@@ -106,7 +108,11 @@ export default function InboxScreen() {
   }));
 
   const all = [...activityItems, ...orderItems, ...sentItems, ...ITEMS];
-  const list = active === 'All' ? all : all.filter(i => i.tab === active);
+  // Messages are conversations; everything else (offers, orders, likes,
+  // follows, comments) is activity.
+  const list = active === 'Messages'
+    ? all.filter(i => i.tab === 'Messages')
+    : all.filter(i => i.tab !== 'Messages');
   const unreadCount = all.filter(i => i.unread).length;
   const activityUnread = activityItems.some(i => i.unread);
 

@@ -198,14 +198,12 @@ export default function WardrobeScreen() {
           <Ionicons name="chevron-forward" size={16} color="#666" />
         </TouchableOpacity>
 
+        {/* One "add a photo" button - the picker already offers camera or
+            library, so splitting it into two buttons only added a choice. */}
         <View style={s.altRow}>
           <TouchableOpacity style={s.altBtn} activeOpacity={0.85} onPress={() => addFromPicker(true)} disabled={adding}>
             <Ionicons name="camera-outline" size={18} color="#fff" />
-            <Text style={s.altTxt}>{adding ? 'Saving…' : 'One photo'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.altBtn} activeOpacity={0.85} onPress={() => addFromPicker(false)} disabled={adding}>
-            <Ionicons name="images-outline" size={18} color="#fff" />
-            <Text style={s.altTxt}>Upload</Text>
+            <Text style={s.altTxt}>{adding ? 'Saving…' : 'Add a photo'}</Text>
           </TouchableOpacity>
         </View>
 

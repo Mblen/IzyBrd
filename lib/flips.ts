@@ -150,15 +150,20 @@ export async function getFollowingFeedFlips(limit = 30): Promise<DbFlipWithSelle
   });
 }
 
-// Active flips whose title matches the query (case-insensitive).
+// Active flips matching the query (case-insensitive). Searches the title,
+// style and brand - searching titles alone meant a category like "Crew Necks"
+// found nothing, because the style lives in its own column.
 export async function searchFlips(query: string): Promise<DbFlip[]> {
   const q = query.trim();
   if (!q) return [];
+  // Category labels are plural/spaced; the stored style values are not
+  const term = q.replace(/s$/i, '').replace(/-/g, ' ');
+  const safe = term.replace(/[,()*]/g, '');
   const { data, error } = await supabase
     .from('flips')
     .select('*')
     .eq('status', 'active')
-    .ilike('title', `%${q}%`)
+    .or(`title.ilike.%${safe}%,style.ilike.%${safe}%,brand.ilike.%${safe}%`)
     .order('created_at', { ascending: false })
     .limit(30);
   if (error) return [];

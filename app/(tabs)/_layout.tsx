@@ -1,7 +1,8 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { requireAuth } from '../../lib/session';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -39,9 +40,21 @@ function PhoneTabBar({ state, descriptors, navigation }: any) {
         {state.routes.map((route: any, index: number) => {
           const { options } = descriptors[route.key];
           const focused = state.index === index;
-          const onPress = () => {
+          const onPress = async () => {
             const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-            if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+            if (event.defaultPrevented) return;
+            // Home and Discover are open to guests; the rest need an account.
+            if (route.name !== 'index' && route.name !== 'shop') {
+              if (!(await requireAuth())) return;
+            }
+            // Selling starts with the scanner - point the camera at a garment
+            // and the listing writes itself. The scanner offers a "type it
+            // myself" way through to the plain form.
+            if (route.name === 'sell') {
+              router.push('/camera-scan?target=sell' as any);
+              return;
+            }
+            if (!focused) navigation.navigate(route.name);
           };
           return (
             <TouchableOpacity key={route.key} style={s.tabItem} onPress={onPress} activeOpacity={0.7}>
@@ -64,7 +77,7 @@ export default function TabLayout() {
       <Tabs.Screen name="shop"    options={{ tabBarIcon: ({ focused }) => <TabIcon label="Discover" icon="compass-outline"       iconOn="compass"       focused={focused} /> }} />
       <Tabs.Screen name="sell"    options={{ tabBarIcon: ({ focused }) => <TabIcon label="Sell"     icon="add-circle-outline"    iconOn="add-circle"    focused={focused} /> }} />
       <Tabs.Screen name="inbox"   options={{ tabBarIcon: ({ focused }) => <TabIcon label="Inbox"    icon="mail-outline"          iconOn="mail"          focused={focused} /> }} />
-      <Tabs.Screen name="profile" options={{ tabBarIcon: ({ focused }) => <TabIcon label="My Izy"   icon="person-circle-outline" iconOn="person-circle" focused={focused} /> }} />
+      <Tabs.Screen name="profile" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Profile"  icon="person-circle-outline" iconOn="person-circle" focused={focused} /> }} />
     </Tabs>
   );
 }

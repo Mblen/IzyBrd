@@ -5,7 +5,7 @@ import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export default function RootLayout() {
   // Preload the icon font so glyphs render in the production web build
@@ -20,14 +20,10 @@ export default function RootLayout() {
       return;
     }
 
-    // With a backend, gate the app on an auth session.
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) router.replace('/auth' as any);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) router.replace('/auth' as any);
-    });
-    return () => sub.subscription.unsubscribe();
+    // Anyone can browse the feed without an account - people should see the
+    // sweatshirts before being asked to sign up. Signing in is requested at
+    // the moment it's needed (buying, selling, liking, messaging) instead.
+    // Nothing to do here on launch.
   }, []);
 
   // Hold render until the icon font is ready so we never flash tofu glyphs -

@@ -174,12 +174,18 @@ export default function ProfileScreen() {
         </View>
 
         {/* Action buttons */}
+        {/* The wardrobe is what people come here to open, so it gets the
+            full-width button; editing the profile is a quiet pencil. */}
         <View style={s.actionsRow}>
-          <TouchableOpacity style={s.actionBtn} activeOpacity={0.85} onPress={() => router.push('/edit-profile' as any)}>
-            <Text style={s.actionTxt}>Edit Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[s.actionBtn, s.actionBtnAlt]} activeOpacity={0.85} onPress={() => router.push('/wardrobe' as any)}>
+          <TouchableOpacity
+            style={[s.actionBtn, s.actionBtnAlt, { flex: 1 }]}
+            activeOpacity={0.85}
+            onPress={() => router.push('/wardrobe' as any)}
+          >
             <Text style={[s.actionTxt, s.actionTxtAlt]}>My Wardrobe</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.editBtn} activeOpacity={0.85} onPress={() => router.push('/edit-profile' as any)}>
+            <Ionicons name="create-outline" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -288,6 +294,10 @@ const s = StyleSheet.create({
   city: { fontSize: 12, color: '#666' },
   actionsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, paddingBottom: 14 },
   actionBtn: { flex: 1, borderWidth: 1, borderColor: '#333', borderRadius: 8, paddingVertical: 9, alignItems: 'center' },
+  editBtn: {
+    width: 42, borderWidth: 1, borderColor: '#333', borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
   actionBtnAlt: { backgroundColor: '#fff' },
   actionTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
   actionTxtAlt: { color: '#000' },
