@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
+import { goBack } from '../../lib/nav';
 import { Ionicons } from '@expo/vector-icons';
 
 const COLLECTIONS_DATA: Record<string, {
@@ -66,7 +67,7 @@ export default function CollectionDetail() {
       <View style={s.frame}>
       {/* Dark header banner */}
       <View style={[s.banner, { backgroundColor: col.color }]}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={s.backBtn} onPress={() => goBack()}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={s.bannerTitle}>{col.name}</Text>

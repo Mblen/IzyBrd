@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { goBack } from '../lib/nav';
 import { Ionicons } from '@expo/vector-icons';
 import { scanCloset, scanFrame, cropToBox, ClosetScanItem } from '../lib/scan';
 import { addWardrobeItem } from '../lib/wardrobe';
@@ -166,7 +167,7 @@ export default function ClosetScanScreen() {
       <View style={s.frame}>
         {/* Header */}
         <View style={s.header}>
-          <TouchableOpacity style={s.roundBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={s.roundBtn} onPress={() => goBack()}>
             <Ionicons name="close" size={22} color="#fff" />
           </TouchableOpacity>
           <Text style={s.headerTitle}>
@@ -207,7 +208,7 @@ export default function ClosetScanScreen() {
             <Text style={s.centerTxt}>
               Try a photo where the sweatshirts are clearly visible and not folded up.
             </Text>
-            <TouchableOpacity style={s.primaryBtn} onPress={() => router.back()} activeOpacity={0.85}>
+            <TouchableOpacity style={s.primaryBtn} onPress={() => goBack()} activeOpacity={0.85}>
               <Text style={s.primaryBtnTxt}>Take another photo</Text>
             </TouchableOpacity>
           </View>
@@ -274,7 +275,7 @@ export default function ClosetScanScreen() {
               </View>
             ))}
 
-            <TouchableOpacity style={s.doneBtn} onPress={() => router.back()} activeOpacity={0.85}>
+            <TouchableOpacity style={s.doneBtn} onPress={() => goBack()} activeOpacity={0.85}>
               <Text style={s.doneTxt}>{addedCount > 0 ? 'Done' : 'Cancel'}</Text>
             </TouchableOpacity>
             <View style={{ height: 30 }} />

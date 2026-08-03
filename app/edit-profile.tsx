@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { goBack } from '../lib/nav';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getMyProfile, updateMyProfile, uploadAvatar } from '../lib/profile';
@@ -19,8 +20,7 @@ function initials(name: string): string {
 
 // Close the screen, falling back to the profile tab if there's no back-stack.
 function closeScreen() {
-  if (router.canGoBack()) router.back();
-  else router.replace('/(tabs)/profile' as any);
+  goBack('/(tabs)/profile');
 }
 
 export default function EditProfileScreen() {

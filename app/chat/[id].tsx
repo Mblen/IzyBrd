@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { goBack } from '../../lib/nav';
 import { Ionicons } from '@expo/vector-icons';
 import { getRecipientId, getThread, sendMessage, subscribeToThread } from '../../lib/messages';
 import { isSupabaseConfigured } from '../../lib/supabase';
@@ -149,7 +150,7 @@ export default function ChatScreen() {
       <View style={s.frame}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity style={s.headerBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={s.headerBtn} onPress={() => goBack()}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity

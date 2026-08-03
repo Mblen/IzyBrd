@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { goBack } from '../../lib/nav';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { addOffer } from '../../lib/offers';
@@ -245,7 +246,7 @@ export default function FlipDetailScreen() {
             </View>
           )}
           <SafeAreaView style={s.imageOverlay} edges={['top']} pointerEvents="box-none">
-            <TouchableOpacity style={s.overlayBtn} onPress={() => router.back()}>
+            <TouchableOpacity style={s.overlayBtn} onPress={() => goBack()}>
               <Ionicons name="chevron-back" size={22} color="#000" />
             </TouchableOpacity>
             <TouchableOpacity style={s.overlayBtn} onPress={() => setLiked((v) => !v)}>

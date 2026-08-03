@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
+import { goBack } from '../../lib/nav';
 import { Ionicons } from '@expo/vector-icons';
 import { getProfileByUsername } from '../../lib/profile';
 import { getFlipsBySeller } from '../../lib/flips';
@@ -177,7 +178,7 @@ export default function UserProfileScreen() {
       >
         {/* Top bar */}
         <View style={s.topBar}>
-          <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={s.iconBtn} onPress={() => goBack()}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={s.username}>{seller.handle}</Text>

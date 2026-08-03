@@ -200,9 +200,15 @@ export default function SellScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.frame}>
 
-      {/* Header */}
+      {/* Header. Cancel goes straight home rather than back a screen - the
+          scanner is usually the previous screen, and bouncing into it makes
+          Cancel feel like a loop. */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7} onPress={resetForm}>
+        <TouchableOpacity
+          style={styles.headerBtn}
+          activeOpacity={0.7}
+          onPress={() => { resetForm(); router.replace('/(tabs)' as any); }}
+        >
           <Text style={styles.headerCancel}>Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Listing</Text>

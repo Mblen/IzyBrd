@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { goBack } from '../lib/nav';
 import { Ionicons } from '@expo/vector-icons';
 import { searchFlips } from '../lib/flips';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -69,7 +70,7 @@ export default function SearchScreen() {
       <View style={s.frame}>
       {/* Search bar */}
       <View style={s.barRow}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity style={s.backBtn} onPress={() => goBack()} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={s.bar}>

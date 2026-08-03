@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { goBack } from '../lib/nav';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { scanFrame, ScanResult } from '../lib/scan';
@@ -181,7 +182,7 @@ export default function CameraScanScreen() {
       <SafeAreaView style={s.container}>
         <View style={s.frame}>
           <View style={s.topBar}>
-            <TouchableOpacity style={s.roundBtn} onPress={() => router.back()}>
+            <TouchableOpacity style={s.roundBtn} onPress={() => goBack()}>
               <Ionicons name="close" size={22} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -197,7 +198,7 @@ export default function CameraScanScreen() {
             </TouchableOpacity>
             {/* Never a dead end: selling still reaches the form without a camera */}
             <TouchableOpacity
-              onPress={() => (forSelling ? router.replace('/(tabs)/sell' as any) : router.back())}
+              onPress={() => (forSelling ? router.replace('/(tabs)/sell' as any) : goBack())}
             >
               <Text style={s.permAlt}>
                 {forSelling ? 'Type the details myself' : 'Use photo scan instead'}
@@ -227,7 +228,7 @@ export default function CameraScanScreen() {
 
         {/* Top bar */}
         <SafeAreaView edges={['top']} style={s.topBar}>
-          <TouchableOpacity style={s.roundBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={s.roundBtn} onPress={() => goBack()}>
             <Ionicons name="close" size={22} color="#fff" />
           </TouchableOpacity>
           <View style={s.statusPill}>
