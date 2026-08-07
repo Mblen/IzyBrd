@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { checkHandle } from '../lib/username';
+import HandleStatus from '../components/HandleStatus';
 
 type Mode = 'signin' | 'signup';
 
@@ -170,32 +171,12 @@ export default function AuthScreen() {
                 {handleState === 'taken' && <Ionicons name="close-circle" size={20} color="#ff6b6b" />}
               </View>
 
-              {handleState === 'free' && (
-                <Text style={s.handleFree}>@{username} is yours.</Text>
-              )}
-
-              {handleState === 'taken' && (
-                <View>
-                  <Text style={s.handleTaken}>@{username} is already taken.</Text>
-                  {suggestions.length > 0 && (
-                    <>
-                      <Text style={s.handleHint}>These are free - tap one:</Text>
-                      <View style={s.chipRow}>
-                        {suggestions.map(alt => (
-                          <TouchableOpacity
-                            key={alt}
-                            style={s.chip}
-                            activeOpacity={0.8}
-                            onPress={() => setUsername(alt)}
-                          >
-                            <Text style={s.chipTxt}>@{alt}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    </>
-                  )}
-                </View>
-              )}
+              <HandleStatus
+                state={handleState}
+                handle={username}
+                suggestions={suggestions}
+                onPick={setUsername}
+              />
             </View>
           )}
 
@@ -286,15 +267,6 @@ const s = StyleSheet.create({
   },
   at: { fontSize: 17, fontWeight: '700', color: '#fff' },
 
-  handleFree: { fontSize: 13, color: '#4ccf7e', fontWeight: '600' },
-  handleTaken: { fontSize: 13, color: '#ff6b6b', fontWeight: '600' },
-  handleHint: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 8, marginBottom: 6 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 7, backgroundColor: '#1c1c1c',
-  },
-  chipTxt: { fontSize: 13, color: '#fff', fontWeight: '600' },
 
   input: { flex: 1, fontSize: 15, color: '#fff', paddingVertical: 13 },
   inputBox: { backgroundColor: '#1c1c1c', borderRadius: 12, paddingHorizontal: 14 },

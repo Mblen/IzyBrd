@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { updateMyProfile } from '../lib/profile';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { checkHandle } from '../lib/username';
+import HandleStatus from '../components/HandleStatus';
 
 const COLLEGES = [
   'Florida International University',
@@ -229,36 +230,17 @@ export default function OnboardingScreen() {
               {handleState === 'free' && <Ionicons name="checkmark-circle" size={20} color="#4ccf7e" />}
               {handleState === 'taken' && <Ionicons name="close-circle" size={20} color="#ff6b6b" />}
             </View>
-            {handleState === 'taken' ? (
-              <>
-                <Text style={s.handleTaken}>@{username} is already taken.</Text>
-                {suggestions.length > 0 && (
-                  <>
-                    <Text style={s.handleHint}>These are free - tap one:</Text>
-                    <View style={s.chipRow}>
-                      {suggestions.map(alt => (
-                        <TouchableOpacity
-                          key={alt}
-                          style={s.chip}
-                          activeOpacity={0.8}
-                          onPress={() => setUsername(alt)}
-                        >
-                          <Text style={s.chipTxt}>@{alt}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </>
-                )}
-              </>
-            ) : (
-              <Text style={s.handleHint}>
-                {username.length > 0 && username.length < 3
+            <HandleStatus
+              state={handleState}
+              handle={username}
+              suggestions={suggestions}
+              onPick={setUsername}
+              idleHint={
+                username.length > 0 && username.length < 3
                   ? 'At least 3 characters'
-                  : handleState === 'free'
-                  ? `@${username} is yours.`
-                  : 'Letters, numbers and underscores only'}
-              </Text>
-            )}
+                  : 'Letters, numbers and underscores only'
+              }
+            />
             {college !== '' && (
               <View style={s.summaryCard}>
                 <Text style={s.summaryLabel}>Your IzyBrd</Text>
@@ -336,13 +318,6 @@ const s = StyleSheet.create({
   handleAt: { fontSize: 20, fontWeight: '700', color: '#fff' },
   handleInput: { flex: 1, fontSize: 18, fontWeight: '600', color: '#fff', paddingVertical: 15 },
   handleHint: { fontSize: 12, color: '#777', marginTop: 8 },
-  handleTaken: { fontSize: 13, color: '#ff6b6b', fontWeight: '600', marginTop: 8 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  chip: {
-    borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 7, backgroundColor: '#1c1c1c',
-  },
-  chipTxt: { fontSize: 13, color: '#fff', fontWeight: '600' },
   summaryCard: { backgroundColor: '#161616', borderRadius: 16, padding: 18, marginTop: 28, gap: 4 },
   summaryLabel: { fontSize: 11, color: '#777', textTransform: 'uppercase', letterSpacing: 1 },
   summaryHandle: { fontSize: 20, fontWeight: '800', color: '#fff' },
