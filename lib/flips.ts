@@ -138,16 +138,13 @@ export async function getFollowingFeedFlips(limit = 30): Promise<DbFlipWithSelle
   if (!ids.length) return [];
   const { data, error } = await supabase
     .from('flips')
-    .select('*, profiles:seller_id(username, avatar_url)')
+    .select(FEED_SELECT)
     .eq('status', 'active')
     .in('seller_id', ids)
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) return [];
-  return (data ?? []).map(row => {
-    const { profiles, ...flip } = row as DbFlip & { profiles: { username: string | null; avatar_url: string | null } | null };
-    return { ...flip, seller_username: profiles?.username ?? null, seller_avatar: profiles?.avatar_url ?? null };
-  });
+  return (data ?? []).map(row => toFlipWithSeller(row as unknown as FeedRow));
 }
 
 // Active flips matching the query (case-insensitive). Searches the title,
@@ -186,31 +183,54 @@ export async function getFlipsBySeller(sellerId: string): Promise<DbFlip[]> {
 export type DbFlipWithSeller = DbFlip & {
   seller_username: string | null;
   seller_avatar: string | null;
+  // Counts come back with the feed row itself, so a card does not have to ask.
+  like_count: number;
+  comment_count: number;
 };
+
+type FeedRow = DbFlip & {
+  profiles: { username: string | null; avatar_url: string | null } | null;
+  likes: { count: number }[] | null;
+  comments: { count: number }[] | null;
+};
+
+// Flatten the embedded seller and the embedded count arrays into plain fields.
+function toFlipWithSeller(row: FeedRow): DbFlipWithSeller {
+  const { profiles, likes, comments, ...flip } = row;
+  return {
+    ...flip,
+    seller_username: profiles?.username ?? null,
+    seller_avatar: profiles?.avatar_url ?? null,
+    like_count: likes?.[0]?.count ?? 0,
+    comment_count: comments?.[0]?.count ?? 0,
+  };
+}
+
+// Every field the feed needs, counts included. Asking for the counts here is
+// what keeps a 30-flip feed at one request instead of sixty-one - each card
+// used to fetch its own like and comment count on mount.
+const FEED_SELECT =
+  '*, profiles:seller_id(username, avatar_url), likes(count), comments(count)';
 
 // Active flips from everyone, newest first - powers the home feed.
 export async function getFeedFlips(limit = 30): Promise<DbFlipWithSeller[]> {
   const { data, error } = await supabase
     .from('flips')
-    .select('*, profiles:seller_id(username, avatar_url)')
+    .select(FEED_SELECT)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return (data ?? []).map(row => {
-    const { profiles, ...flip } = row as DbFlip & { profiles: { username: string | null; avatar_url: string | null } | null };
-    return { ...flip, seller_username: profiles?.username ?? null, seller_avatar: profiles?.avatar_url ?? null };
-  });
+  return (data ?? []).map(row => toFlipWithSeller(row as unknown as FeedRow));
 }
 
 export async function getFlip(id: string): Promise<DbFlipWithSeller | null> {
   const { data, error } = await supabase
     .from('flips')
-    .select('*, profiles:seller_id(username, avatar_url)')
+    .select(FEED_SELECT)
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const { profiles, ...flip } = data as DbFlip & { profiles: { username: string | null; avatar_url: string | null } | null };
-  return { ...flip, seller_username: profiles?.username ?? null, seller_avatar: profiles?.avatar_url ?? null };
+  return toFlipWithSeller(data as unknown as FeedRow);
 }

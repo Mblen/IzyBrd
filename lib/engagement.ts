@@ -5,6 +5,30 @@
 import { supabase } from './supabase';
 import { DbFlip } from './flips';
 
+// ---- Bulk state for a feed ------------------------------------------------
+
+// Which of these flips the signed-in user has liked and saved, in two queries
+// for the whole feed rather than two per card. Returns empty sets when signed
+// out, which is the correct answer anyway.
+export async function getMyEngagement(
+  flipIds: string[]
+): Promise<{ liked: Set<string>; saved: Set<string> }> {
+  const empty = { liked: new Set<string>(), saved: new Set<string>() };
+  if (!flipIds.length) return empty;
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return empty;
+
+  const [likedRes, savedRes] = await Promise.all([
+    supabase.from('likes').select('flip_id').eq('user_id', auth.user.id).in('flip_id', flipIds),
+    supabase.from('saves').select('flip_id').eq('user_id', auth.user.id).in('flip_id', flipIds),
+  ]);
+
+  return {
+    liked: new Set((likedRes.data ?? []).map(r => r.flip_id as string)),
+    saved: new Set((savedRes.data ?? []).map(r => r.flip_id as string)),
+  };
+}
+
 // ---- Likes ----------------------------------------------------------------
 
 export async function getLikeCount(flipId: string): Promise<number> {

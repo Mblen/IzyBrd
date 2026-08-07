@@ -284,6 +284,8 @@ create table if not exists public.follows (
   created_at    timestamptz not null default now(),
   primary key (follower_id, following_id)
 );
+-- Follower counts filter on following_id, the primary key's second column.
+create index if not exists follows_following_idx on public.follows (following_id);
 
 alter table public.follows enable row level security;
 
@@ -310,6 +312,9 @@ create table if not exists public.likes (
   created_at  timestamptz not null default now(),
   primary key (user_id, flip_id)
 );
+-- Counting likes for one flip filters on flip_id alone, which the primary key
+-- above cannot serve because flip_id is its second column.
+create index if not exists likes_flip_idx on public.likes (flip_id);
 alter table public.likes enable row level security;
 
 drop policy if exists "likes are viewable by everyone" on public.likes;
@@ -333,6 +338,7 @@ create table if not exists public.saves (
   created_at  timestamptz not null default now(),
   primary key (user_id, flip_id)
 );
+create index if not exists saves_flip_idx on public.saves (flip_id);
 alter table public.saves enable row level security;
 
 drop policy if exists "users can read their own saves" on public.saves;

@@ -21,7 +21,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { isLocalSold, subscribeLocalOrders } from '../../lib/orders';
 import { getFeedFlips, getFollowingFeedFlips, DEFAULT_FLIP_IMAGE } from '../../lib/flips';
 import { isRealFlipId } from '../../lib/ids';
-import { getLikeCount, hasLiked, like, unlike, subscribeLikes, hasSaved, save, unsave } from '../../lib/engagement';
+import { getLikeCount, like, unlike, subscribeLikes, save, unsave, getMyEngagement } from '../../lib/engagement';
 import { getCommentCount, subscribeComments } from '../../lib/comments';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -147,37 +147,47 @@ function ActionBtn({
 }
 
 // --- Single Flip Card -----------------------------------------------------------
-function FlipCard({ item }: { item: FeedItem }) {
+function FlipCard({
+  item,
+  initiallyLiked = false,
+  initiallySaved = false,
+  inView = true,
+}: {
+  item: FeedItem;
+  initiallyLiked?: boolean;
+  initiallySaved?: boolean;
+  // Whether this card is the one on screen. Live subscriptions only run for it.
+  inView?: boolean;
+}) {
   const { width: winW, height: winH } = useWindowDimensions();
   const isReal = isRealFlipId(item.id);
-  const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [liked, setLiked] = useState(initiallyLiked);
+  const [saved, setSaved] = useState(initiallySaved);
   const [likes, setLikes] = useState(item.likes);
   const [comments, setComments] = useState(item.comments);
   const [showComments, setShowComments] = useState(false);
   const [shareNote, setShareNote] = useState('');
   const sold = useSyncExternalStore(subscribeLocalOrders, () => isLocalSold(item.id), () => isLocalSold(item.id));
 
-  // Keep the comment count live (works for real flips and seeded demo flips).
+  // Counts and my like/save state now arrive with the feed itself, so there is
+  // nothing to fetch on mount. These effects only keep them live afterwards -
+  // and only for the card in view, so a 30-flip feed opens two subscriptions
+  // rather than sixty.
   useEffect(() => {
+    if (!inView) return;
     let active = true;
     const refresh = () => getCommentCount(item.id).then(c => { if (active) setComments(c); }).catch(() => {});
-    refresh();
     const unsub = subscribeComments(item.id, refresh);
     return () => { active = false; unsub(); };
-  }, [item.id]);
+  }, [item.id, inView]);
 
-  // Real flips: load like count + my like/save state, and keep the count live
   useEffect(() => {
-    if (!isReal) return;
+    if (!isReal || !inView) return;
     let active = true;
     const refreshCount = () => { getLikeCount(item.id).then(c => { if (active) setLikes(c); }).catch(() => {}); };
-    refreshCount();
-    hasLiked(item.id).then(v => { if (active) setLiked(v); }).catch(() => {});
-    hasSaved(item.id).then(v => { if (active) setSaved(v); }).catch(() => {});
     const unsub = subscribeLikes(item.id, refreshCount);
     return () => { active = false; unsub(); };
-  }, [item.id]);
+  }, [item.id, isReal, inView]);
 
   const toggleLike = async () => {
     if (!(await requireAuth())) return;
@@ -347,7 +357,20 @@ export default function HomeScreen() {
   const { height: winH } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState(FOR_YOU_TAB); // default: For You (rightmost)
   const [dbFlips, setDbFlips] = useState<FeedItem[]>([]);
+  // Which flips this viewer has already liked/saved, fetched once per feed load.
+  const [myEngagement, setMyEngagement] = useState<{ liked: Set<string>; saved: Set<string> }>(
+    { liked: new Set(), saved: new Set() }
+  );
   const listRef = useRef<FlatList>(null);
+
+  // Which card is on screen. Only that one keeps a live subscription open.
+  // Both of these must keep the same identity for the life of the list -
+  // FlatList throws if onViewableItemsChanged changes between renders.
+  const [visibleId, setVisibleId] = useState<string | null>(null);
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 });
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: any[] }) => {
+    if (viewableItems.length > 0) setVisibleId(viewableItems[0].item.id as string);
+  });
 
   // "For You" shows everyone's flips; "Following" shows only people you follow.
   // Refetches on focus and when the tab changes; a just-posted flip appears at
@@ -373,14 +396,19 @@ export default function HomeScreen() {
               story: f.story ?? '',
               price: f.price,
               city: f.city ?? '',
-              likes: 0,
-              comments: 0,
+              likes: f.like_count,
+              comments: f.comment_count,
               imageBg: '#1a1a1a',
               image: f.image_url ?? '',
               video: f.video_url ?? '',
               sellerAvatar: f.seller_avatar ?? '',
             }))
           );
+          // One round trip for the whole feed's liked/saved state, rather than
+          // each card asking about itself.
+          getMyEngagement(flips.map(f => f.id))
+            .then(({ liked, saved }) => { if (active) setMyEngagement({ liked, saved }); })
+            .catch(() => { /* cards fall back to their un-liked default */ });
         })
         .catch(() => { /* keep the mock feed on error */ });
       return () => { active = false; };
@@ -422,7 +450,16 @@ export default function HomeScreen() {
         ref={listRef}
         data={feedData}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <FlipCard item={item} />}
+        renderItem={({ item }) => (
+          <FlipCard
+            item={item}
+            initiallyLiked={myEngagement.liked.has(item.id)}
+            initiallySaved={myEngagement.saved.has(item.id)}
+            inView={visibleId === null || visibleId === item.id}
+          />
+        )}
+        onViewableItemsChanged={onViewableItemsChanged.current}
+        viewabilityConfig={viewabilityConfig.current}
         pagingEnabled
         showsVerticalScrollIndicator={false}
         snapToInterval={winH}
