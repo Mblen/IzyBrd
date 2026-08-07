@@ -2,10 +2,22 @@
 -- Pending changes to apply in Supabase -> SQL Editor -> Run.
 -- Safe to run more than once.
 --
--- Part 1 fixes account creation failing when a username is already taken.
--- Part 2 stops one signed-in user from overwriting another user's photos.
--- Both are already in schema.sql; this file is just the not-yet-applied part.
+-- Parts 1 and 2 have already been applied (2026-08-07).
+-- Part 3 is the outstanding one: indexes the feed's like and comment counts
+-- need. Running the whole file again is harmless.
 -- ---------------------------------------------------------------------------
+
+
+-- ---------------------------------------------------------------------------
+-- 3. Indexes for the counts the feed now asks for
+-- ---------------------------------------------------------------------------
+-- likes and saves are keyed on (user_id, flip_id). Counting the likes on one
+-- flip filters by flip_id alone, and a composite key cannot serve a lookup on
+-- its second column - so without these Postgres scans the whole table for
+-- every flip in the feed. Same story for follower counts on follows.
+create index if not exists likes_flip_idx on public.likes (flip_id);
+create index if not exists saves_flip_idx on public.saves (flip_id);
+create index if not exists follows_following_idx on public.follows (following_id);
 
 
 -- ---------------------------------------------------------------------------
