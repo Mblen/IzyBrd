@@ -150,6 +150,15 @@ export default function CameraScanScreen() {
     } as any);
   };
 
+  // Take what the scanner identified into search, so a scan leads to things
+  // that are actually for sale rather than stopping at the wardrobe.
+  const shopSimilar = () => {
+    if (!result) return;
+    const q = [result.style, result.brand_guess].filter(Boolean).join(' ').trim()
+      || result.title || 'sweatshirt';
+    router.replace(`/search?q=${encodeURIComponent(q)}` as any);
+  };
+
   const saveToWardrobe = async () => {
     if (!result || !lastFrameUri || saving) return;
     setSaving(true);
@@ -196,12 +205,17 @@ export default function CameraScanScreen() {
             <TouchableOpacity style={s.permBtn} onPress={requestPermission} activeOpacity={0.85}>
               <Text style={s.permBtnTxt}>Allow camera</Text>
             </TouchableOpacity>
-            {/* Never a dead end: selling still reaches the form without a camera */}
+            {/* Never a dead end, and never a label that promises something it
+                does not do: "Use photo scan instead" used to just go back. */}
             <TouchableOpacity
-              onPress={() => (forSelling ? router.replace('/(tabs)/sell' as any) : goBack())}
+              onPress={() =>
+                forSelling
+                  ? router.replace('/(tabs)/sell' as any)
+                  : router.replace('/(tabs)/shop' as any)
+              }
             >
               <Text style={s.permAlt}>
-                {forSelling ? 'Type the details myself' : 'Use photo scan instead'}
+                {forSelling ? 'Type the details myself' : 'Browse without scanning'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -272,17 +286,26 @@ export default function CameraScanScreen() {
                     <Text style={s.saveBtnTxt}>Sell this</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity
-                    style={[s.saveBtn, (saving || saved) && s.saveBtnOff]}
-                    onPress={saveToWardrobe}
-                    disabled={saving || saved}
-                    activeOpacity={0.85}
-                  >
-                    <Ionicons name={saved ? 'checkmark' : 'add'} size={16} color={saved ? '#888' : '#000'} />
-                    <Text style={[s.saveBtnTxt, saved && s.saveBtnTxtOff]}>
-                      {saving ? 'Saving…' : saved ? 'In your wardrobe' : 'Add to wardrobe'}
-                    </Text>
-                  </TouchableOpacity>
+                  /* Shopping is the point of the app, so the first action on a
+                     scan result leads to things you can buy. Saving it to the
+                     wardrobe stays available, just second. */
+                  <>
+                    <TouchableOpacity style={s.saveBtn} onPress={shopSimilar} activeOpacity={0.85}>
+                      <Ionicons name="search" size={16} color="#000" />
+                      <Text style={s.saveBtnTxt}>Find ones like this</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.altBtn, (saving || saved) && s.saveBtnOff]}
+                      onPress={saveToWardrobe}
+                      disabled={saving || saved}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name={saved ? 'checkmark' : 'add'} size={16} color={saved ? '#888' : '#fff'} />
+                      <Text style={[s.altBtnTxt, saved && s.saveBtnTxtOff]}>
+                        {saving ? 'Saving…' : saved ? 'Saved' : 'Save'}
+                      </Text>
+                    </TouchableOpacity>
+                  </>
                 )}
                 <TouchableOpacity style={s.rescanBtn} onPress={captureAndScan} activeOpacity={0.85}>
                   <Ionicons name="refresh" size={18} color="#fff" />
@@ -382,6 +405,12 @@ const s = StyleSheet.create({
   saveBtnOff: { backgroundColor: '#2a2a2a' },
   saveBtnTxt: { fontSize: 13, fontWeight: '800', color: '#000' },
   saveBtnTxtOff: { color: '#888' },
+  altBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: '#2a2a2a', borderRadius: 22, paddingVertical: 11,
+    paddingHorizontal: 16,
+  },
+  altBtnTxt: { fontSize: 13, fontWeight: '800', color: '#fff' },
   rescanBtn: {
     width: 42, height: 42, borderRadius: 21, backgroundColor: '#2a2a2a',
     alignItems: 'center', justifyContent: 'center',

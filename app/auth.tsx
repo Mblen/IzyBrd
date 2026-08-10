@@ -76,10 +76,24 @@ export default function AuthScreen() {
     return () => { active = false; clearTimeout(timer); };
   }, [username, signingUp]);
 
+  // Accepts every ordinary address; only catches obviously malformed ones.
+  const emailLooksRight = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
   const canSubmit =
-    email.includes('@') &&
+    emailLooksRight &&
     password.length >= 6 &&
     (!signingUp || (username.length >= 3 && handleState !== 'taken' && handleState !== 'checking'));
+
+  // A greyed-out button tells you that you cannot continue but not why. Name
+  // the one thing still missing, in the order the fields appear.
+  const missing = !signingUp
+    ? (!emailLooksRight ? 'Enter your email address' : password.length < 6 ? 'Enter your password' : '')
+    : username.length < 3 ? 'Pick a username to continue'
+    : handleState === 'checking' ? 'Checking that username...'
+    : handleState === 'taken' ? 'Pick a username that is free'
+    : !emailLooksRight ? 'Enter a valid email address'
+    : password.length < 6 ? 'Your password needs at least 6 characters'
+    : '';
 
   const submit = async () => {
     if (!canSubmit || loading) return;
@@ -208,6 +222,7 @@ export default function AuthScreen() {
 
           {error && <Text style={s.error}>{error}</Text>}
           {notice && <Text style={s.notice}>{notice}</Text>}
+          {!error && !canSubmit && missing !== '' && <Text style={s.missing}>{missing}</Text>}
 
           <TouchableOpacity
             style={[s.cta, !canSubmit && s.ctaOff]}
@@ -218,7 +233,9 @@ export default function AuthScreen() {
             {loading ? (
               <ActivityIndicator color="#000" />
             ) : (
-              <Text style={s.ctaTxt}>{signingUp ? 'Create account' : 'Sign in'}</Text>
+              <Text style={[s.ctaTxt, !canSubmit && s.ctaTxtOff]}>
+                {signingUp ? 'Create account' : 'Sign in'}
+              </Text>
             )}
           </TouchableOpacity>
 
@@ -277,6 +294,9 @@ const s = StyleSheet.create({
   cta: { backgroundColor: '#fff', borderRadius: 28, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
   ctaOff: { backgroundColor: '#333' },
   ctaTxt: { fontSize: 15, fontWeight: '800', color: '#000', letterSpacing: 0.2 },
+  // Black on the disabled grey is close to unreadable.
+  ctaTxtOff: { color: '#8a8a8a' },
+  missing: { fontSize: 13, color: '#9a9a9a', textAlign: 'center', marginBottom: 10 },
 
   toggle: { alignItems: 'center', paddingVertical: 8 },
   toggleTxt: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },

@@ -66,18 +66,29 @@ export default function DiscoverScreen() {
         contentContainerStyle={{ width: '100%', maxWidth: 480, alignSelf: 'center' }}
       >
 
-        {/* Search bar */}
-        <TouchableOpacity
-          style={s.searchBar}
-          onPress={() => router.push('/search' as any)}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="search" size={16} color="#888" />
-          <Text style={s.searchHint}>Search for anything</Text>
-          <Ionicons name="camera-outline" size={18} color="#bbb" />
-          <Ionicons name="heart-outline" size={18} color="#bbb" />
-          <Ionicons name="bag-outline" size={18} color="#bbb" />
-        </TouchableOpacity>
+        {/* Search, and the only signposted way into the scanner. The camera,
+            heart and bag icons that used to sit here were inside the search
+            button, so tapping them opened search - they looked like controls
+            and were not. Scan is now a real button and carries its own word,
+            because a bare camera icon does not say what it does. */}
+        <View style={s.searchRow}>
+          <TouchableOpacity
+            style={s.searchBar}
+            onPress={() => router.push('/search' as any)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="search" size={16} color="#888" />
+            <Text style={s.searchHint}>Search for anything</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.scanBtn}
+            onPress={() => router.push('/camera-scan' as any)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="scan-outline" size={17} color="#fff" />
+            <Text style={s.scanTxt}>Scan</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Hero — opens the main feed */}
         <TouchableOpacity style={s.hero} activeOpacity={0.9} onPress={openFeed}>
@@ -181,17 +192,23 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
 
   // Search
-  searchBar: {
+  searchRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#1e1e1e', borderRadius: 30,
-    paddingHorizontal: 16, paddingVertical: 12,
     marginHorizontal: 14, marginTop: 8, marginBottom: 4,
   },
-  searchIcon: { fontSize: 14 },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#1e1e1e', borderRadius: 30,
+    paddingHorizontal: 16, minHeight: 46,
+  },
   searchHint: { flex: 1, fontSize: 14, color: '#666' },
-  searchCam:   { fontSize: 16 },
-  searchHeart: { fontSize: 16 },
-  searchBag:   { fontSize: 16 },
+  scanBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#2a2a2a', borderRadius: 30,
+    paddingHorizontal: 14, minHeight: 46,
+  },
+  scanTxt: { fontSize: 14, color: '#fff', fontWeight: '700' },
 
   // Hero
   hero: { marginHorizontal: 14, marginVertical: 12, borderRadius: 16, overflow: 'hidden' },
