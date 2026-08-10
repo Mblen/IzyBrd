@@ -1,16 +1,16 @@
 # IzyBrd
 
-A mobile sweatshirt marketplace — *"StockX meets Pinterest meets TikTok, but only for sweatshirts."* Built for college students. A listing is called a **flip**; buying one is **the flip**.
+A mobile marketplace for buying and selling second-hand sweatshirts, aimed at
+college students but open to anyone. Think a shopping app with a TikTok-style
+feed: you scroll full-screen listings, tap one, and buy it or make an offer.
 
-Built with React Native + Expo and TypeScript, using Expo Router for file-based navigation.
+A listing is called a **flip**. Everything in the app is a sweatshirt - hoodies,
+crews, zip-ups, mock necks. That narrowness is deliberate and is the product.
 
-## Tech stack
+Built with React Native + Expo (TypeScript), Expo Router for navigation, and
+Supabase for the database, auth, file storage and realtime updates.
 
-- **React Native** 0.85 + **Expo** SDK 56
-- **Expo Router** (file-based routing)
-- **TypeScript**
-- `@expo/vector-icons` (Ionicons), `expo-linear-gradient`, `expo-image-picker`
-- `@react-native-async-storage/async-storage` (onboarding persistence)
+---
 
 ## Running it
 
@@ -19,39 +19,228 @@ npm install
 npx expo start
 ```
 
-Then open in **Expo Go** on your phone (scan the QR code), or press `w` for web. iOS/Android simulators also work via `npm run ios` / `npm run android`.
+Then press `w` for web, or scan the QR code with Expo Go on a phone.
 
-> Note: product images are Unsplash URLs and may render black on Expo **web** (CORS); they display correctly on a phone.
+> Expo Go on the iOS App Store is pinned to SDK 54 while this project is on
+> SDK 56, so iPhone testing is done through the deployed web app instead
+> ("Add to Home Screen" from Safari). Android Expo Go works.
 
-## What works today
+### Building and deploying the web app
 
-The full marketplace loop is built and navigable end to end:
+```bash
+npx expo export --platform web
+```
 
-- **Onboarding** — 3-step welcome → pick your school → choose a handle, shown only on first launch
-- **Home feed** — TikTok-style full-screen vertical feed with like/comment/share/save and per-flip stories
-- **Discover & Search** — editorial discovery screen and a dedicated search experience
-- **Sell** — a "New Flip" form with a real photo picker; posting creates a listing that appears in your profile and is fully shoppable
-- **Flip detail** — photos, story, seller, details, and a **Make offer** sheet
-- **Profiles** — your own profile and tappable seller closets
-- **Inbox** — messages, offers, orders, and activity in one place
-- **Chat** — message threads with **accept / decline** offer cards
-- **Checkout** — order summary, (mock) payment, and a confirmation that lands in your Inbox
-- **Sold state** — once a flip is bought it reads as *Sold* across the feed and detail
+That writes `dist/`. **`expo export` does not create `dist/_redirects`, and the
+deploy needs it** - without it every route except `/` returns the SPA fallback
+for real files too, which silently breaks the icon font and leaves screens
+blank. Recreate it after every export:
 
-## Architecture notes
+```bash
+printf '/*    /index.html   200\n' > dist/_redirects
+```
 
-- **Routing** lives in `app/` (Expo Router). Dynamic routes use `[id].tsx` (e.g. `app/flip/[id].tsx`).
-- **Shared state** lives in `lib/` as small in-memory stores (`offers`, `orders`, `listings`) wired into screens with React's `useSyncExternalStore`. These are intentionally simple stand-ins for a backend and are the single place to swap in real data.
-- **Design**: black & white first; dark immersive screens (feed, discover, profile, detail) and a white utility Sell screen.
+Then deploy. Use the CLI, not the Netlify drag-and-drop upload - the drag-and-drop
+has silently dropped files before:
 
-## Status & roadmap
+```bash
+npx netlify-cli deploy --prod --dir dist
+```
 
-**Done:** full frontend loop (discover → offer → chat → buy → sold), onboarding, photo upload, navigation between every screen.
+---
 
-**Current limitation:** all data is mock / in-memory — it resets on reload and there are no real accounts.
+## Environment variables
 
-**Next (toward the full deliverable):**
+Copy `.env.example` to `.env` and fill in two values from the Supabase
+dashboard under **Project Settings -> API**:
 
-1. **Backend (Supabase)** — accounts (sign-up/login), a real database for flips/offers/orders/messages, and image upload for listing photos. Replaces the `lib/` in-memory stores.
-2. **Robustness** — loading/empty/error states, form validation, pull-to-refresh.
-3. **Nice-to-haves** — push notifications for offers/messages, brand-color pass (A/B tested), saved searches.
+| Variable | Where it comes from |
+|---|---|
+| `EXPO_PUBLIC_SUPABASE_URL` | Project URL |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | The publishable / anon key |
+
+The anon key is a public client key and is safe to ship in the app bundle -
+row level security is what actually protects the data. **Never put the
+`service_role` key in this file or anywhere in the client.** `.env` is
+gitignored; only `.env.example` is tracked.
+
+One more secret lives in Supabase rather than here: the scanning function
+needs `ANTHROPIC_API_KEY` set under **Edge Functions -> scan-item -> Secrets**.
+
+---
+
+## Architecture
+
+Three layers, and the rule is that they only talk downward:
+
+```
+app/          screens and navigation (Expo Router - the file tree IS the routes)
+components/   shared UI used by more than one screen
+lib/          all data access; every Supabase call in the project lives here
+```
+
+**Screens never import `supabase` directly.** They call a function in `lib/`.
+That is the main convention to preserve - it means you can find every query in
+one folder, and swapping the backend would not touch the screens.
+
+Each file in `lib/` owns one domain and mirrors a database table:
+
+| File | What it owns |
+|---|---|
+| `supabase.ts` | The client, and `isSupabaseConfigured` |
+| `session.ts` | Who is signed in; `requireAuth()` gates actions behind login |
+| `profile.ts` | Profiles, avatars |
+| `username.ts` | Handle availability and suggestions |
+| `flips.ts` | Listings, the feed query, media upload |
+| `engagement.ts` | Likes and saves |
+| `comments.ts` | Comments, with realtime |
+| `follows.ts` | Follow graph |
+| `offers.ts` / `orders.ts` | Offers and completed purchases |
+| `messages.ts` | Direct messages, with realtime |
+| `reviews.ts` | Seller ratings |
+| `wardrobe.ts` | The user's private digital closet |
+| `scan.ts` | Calls the AI scanning function |
+| `nav.ts` | `goBack()` - see "Conventions" |
+| `ids.ts` | Id helpers; `storageKey()` for unguessable filenames |
+
+### Conventions worth knowing
+
+- **`goBack()` instead of `router.back()`.** `router.back()` silently does
+  nothing when there is no history - a screen opened from a URL, or the first
+  screen after a redirect - which turns every X and Back into a dead button.
+  `lib/nav.ts` falls back to a real destination. Use it everywhere.
+- **`useWindowDimensions()`, never a module-level `Dimensions.get()`.** The web
+  build renders at desktop widths and must reflow.
+- **Screens are capped at 480px wide and centred** so the app stays
+  phone-shaped in a desktop browser.
+- **Realtime channel names must be unique per subscription.** Two subscriptions
+  sharing a channel name crash with "cannot add postgres_changes callbacks after
+  subscribe()". Append a random suffix.
+- **No box-drawing or unicode art in comments** - it breaks on Windows
+  terminals. Plain hyphens only.
+
+---
+
+## Database
+
+Schema lives in `supabase/schema.sql`, which is idempotent - safe to paste into
+the SQL editor and run again at any time. `supabase/pending.sql` holds changes
+not yet applied to the live project.
+
+| Table | Purpose |
+|---|---|
+| `profiles` | One row per auth user, created automatically on signup |
+| `flips` | The listings |
+| `likes` / `saves` | Public like counts; private saves |
+| `comments` | Comments on a flip |
+| `follows` | Follower graph |
+| `offers` | Buyer offers below asking price |
+| `orders` | Completed purchases |
+| `messages` | Direct messages between two users |
+| `reviews` | Seller ratings, tied to an order |
+| `wardrobe_items` | A user's private closet, from the scanner |
+
+Two triggers do work the client cannot be trusted to do:
+
+- **`handle_new_user`** creates the profile row on signup. It must never fail:
+  a taken username used to abort the whole signup with a raw constraint error,
+  so it now settles on a free variant and falls back to a bare profile row if
+  anything else goes wrong.
+- **`mark_flip_sold`** flips a listing to sold when an order is created, running
+  as security definer so the buyer does not need write access to the seller's row.
+
+Row level security is on for every table. The pattern is: public data is
+readable by everyone, and you can only write rows that are yours. Storage
+uploads are confined to a folder named after the uploader's user id, so one
+user cannot overwrite another's photos - the app builds every path as
+`<user id>/...`.
+
+---
+
+## Authentication
+
+Supabase Auth, email and password. `lib/session.ts` wraps it:
+
+- `isSignedIn()` - async check
+- `requireAuth()` - checks, and routes to `/auth` if not; returns false so the
+  caller can bail out
+- `knownSignedIn()` - synchronous best-guess for first render
+
+Browsing is open to guests. Home and Discover work signed out; liking, saving,
+commenting, selling, messaging and buying call `requireAuth()` first. That is
+deliberate - making people sign up before they can see anything loses them.
+
+---
+
+## External services
+
+| Service | Used for | Notes |
+|---|---|---|
+| Supabase | Database, auth, file storage, realtime | Free tier |
+| Anthropic API | Garment recognition from photos | Called only from the edge function, never the client |
+| Netlify | Hosting the web build | Drag-and-drop is unreliable; use the CLI |
+
+The Anthropic key is never in the app. `lib/scan.ts` invokes a Supabase edge
+function (`supabase/functions/scan-item/`), which holds the key and calls the
+model. The function rate-limits to 40 scans per user per hour.
+
+---
+
+## Main features and where they live
+
+| Feature | Code |
+|---|---|
+| Full-screen shopping feed | `app/(tabs)/index.tsx` |
+| Discover, categories, search entry, Scan button | `app/(tabs)/shop.tsx` |
+| Search | `app/search.tsx`, `searchFlips` in `lib/flips.ts` |
+| Listing detail, gallery, offers | `app/flip/[id].tsx` |
+| Checkout and post-purchase rating | `app/checkout/[id].tsx` |
+| Creating a listing | `app/(tabs)/sell.tsx` |
+| Live camera scanner | `app/camera-scan.tsx` |
+| Closet scan (many garments, one photo) | `app/closet-scan.tsx` |
+| Digital wardrobe | `app/wardrobe.tsx` |
+| Messages | `app/(tabs)/inbox.tsx`, `app/chat/[id].tsx` |
+| Own profile / other profiles | `app/(tabs)/profile.tsx`, `app/user/[id].tsx` |
+| Signup and onboarding | `app/auth.tsx`, `app/onboarding.tsx` |
+
+---
+
+## Known issues and things deliberately unfinished
+
+- **Seeded demo data is mixed into the real app.** `app/(tabs)/index.tsx`,
+  `app/flip/[id].tsx`, `app/checkout/[id].tsx`, `app/user/[id].tsx`,
+  `app/collection/[id].tsx` and `app/chat/[id].tsx` all contain hardcoded demo
+  listings and sellers, so the app is never empty during a demo. Ids `'1'`-`'5'`
+  are demo flips; anything else is a real UUID. **This must be removed before a
+  real launch** - a tester can message a seller who does not exist. `isRealFlipId()`
+  in `lib/ids.ts` is what distinguishes them.
+- **Photos upload at full camera resolution.** A phone photo is 3-5MB and the
+  feed downloads them at that size. `expo-image-manipulator` is already a
+  dependency; resizing to ~1080px on upload would cut bandwidth and storage
+  roughly tenfold. Not done because it changes how listing photos look.
+- **Payment is simulated.** Checkout creates an order row. There is no payment
+  processor; the card on the checkout screen is fixed text.
+- **Shipping is not real.** No labels, tracking, or address validation.
+- **The web bundle is ~2.3MB**, which is slow on a phone's first load. Fixing it
+  means lazy-loading the heavy screens.
+- **No password reset flow.** Supabase supports it; the screen was never built.
+- **Collections are static.** `app/collection/[id].tsx` is entirely hardcoded.
+
+## Future work
+
+Roughly in the order it would pay off:
+
+1. Remove seeded demo data and replace with real seeded accounts
+2. Resize images on upload
+3. Password reset
+4. Real payments
+5. Push notifications for offers and messages
+6. Lazy-load screens to shrink the bundle
+7. Native builds (EAS) so iPhone testing does not depend on the web app
+
+---
+
+## Testing
+
+See `TESTING.md` for the full manual test checklist, including the failure
+cases that matter most and the tasks to give a first-time tester.
