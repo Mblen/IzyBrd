@@ -1,0 +1,18 @@
+# The app is a single-page app: every route is handled by index.html in the
+# browser, so the server has to serve index.html for paths that are not real
+# files. Without this rule, opening /inbox or /camera-scan directly - which is
+# what happens with a shared link, a bookmark, or a refresh - returns a 404.
+#
+# This used to live in a hand-written dist/_redirects, but the deploy runs a
+# build that regenerates dist/ and wipes it, so the rule kept disappearing and
+# the bug kept coming back. Keeping it here means it is version-controlled and
+# survives every rebuild.
+#
+# Only redirects are set here on purpose: the build command and publish
+# directory stay as configured in the Netlify UI, and anything named in this
+# file would override them.
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
