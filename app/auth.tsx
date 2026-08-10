@@ -34,8 +34,16 @@ function friendlyAuthError(e: any): string {
   if (raw.includes('password') && raw.includes('at least')) {
     return 'Your password needs to be at least 6 characters.';
   }
-  if (raw.includes('unable to validate email') || raw.includes('invalid email')) {
-    return 'That email address does not look right.';
+  // Supabase phrases this several ways, including: Email address "x" is invalid
+  if (
+    raw.includes('unable to validate email') ||
+    raw.includes('invalid email') ||
+    (raw.includes('email') && raw.includes('is invalid'))
+  ) {
+    return 'That email address does not look right. Check it and try again.';
+  }
+  if (raw.includes('rate limit') || raw.includes('too many')) {
+    return 'Too many tries just now. Wait a minute and try again.';
   }
   if (raw.includes('network') || raw.includes('fetch')) {
     return 'Could not reach the server. Check your connection and try again.';
@@ -94,6 +102,30 @@ export default function AuthScreen() {
     : !emailLooksRight ? 'Enter a valid email address'
     : password.length < 6 ? 'Your password needs at least 6 characters'
     : '';
+
+  // Password reset. Supabase emails a recovery link; there is nothing to do in
+  // the app beyond asking for the address and saying what happens next.
+  const sendReset = async () => {
+    if (loading) return;
+    setError(null);
+    setNotice(null);
+    if (!emailLooksRight) {
+      setError('Enter your email address first, then tap this again.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+      if (error) throw error;
+      // Deliberately the same message whether or not the address has an
+      // account, so this cannot be used to discover who is registered.
+      setNotice('If that email has an account, a reset link is on its way. Check your inbox.');
+    } catch (e: any) {
+      setError(friendlyAuthError(e));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const submit = async () => {
     if (!canSubmit || loading) return;
@@ -239,6 +271,12 @@ export default function AuthScreen() {
             )}
           </TouchableOpacity>
 
+          {!signingUp && (
+            <TouchableOpacity style={s.toggle} onPress={sendReset} disabled={loading}>
+              <Text style={s.forgotTxt}>Forgot your password?</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={s.toggle}
             onPress={() => { setMode(signingUp ? 'signin' : 'signup'); setError(null); setNotice(null); }}
@@ -300,4 +338,5 @@ const s = StyleSheet.create({
 
   toggle: { alignItems: 'center', paddingVertical: 8 },
   toggleTxt: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },
+  forgotTxt: { fontSize: 13, color: '#fff', fontWeight: '600' },
 });
