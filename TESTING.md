@@ -152,9 +152,18 @@ happened.
 
 ## Known gaps this checklist will surface
 
-These are documented in the README under "Known issues" and are expected:
+Expected, documented in the README - not bugs to report:
 
-- Demo listings (ids `1`-`5`) and demo sellers are mixed in with real data.
-  Messaging a demo seller goes nowhere.
-- Payment is simulated - buying creates an order but charges nothing.
-- No password reset.
+- **Payment is simulated.** Buying creates an order and charges nothing. The
+  card on the checkout screen is fixed text.
+- **No shipping.** No tracking, labels or address validation.
+- **No order history screen.** Purchases appear in the Inbox, not as a list.
+- **Demo listings still exist** (ids `1`-`5`) but only appear if the database
+  has no real listings at all. With real listings present you will not see them.
+
+## Add a password-reset check
+
+- [ ] Sign-in shows "Forgot your password?"
+- [ ] **[F]** Tap it with the email box empty -> tells you to fill it in first
+- [ ] Tap it with your address -> confirms a link is on its way
+- [ ] The email arrives and the link lets you set a new password
