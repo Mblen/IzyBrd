@@ -205,40 +205,63 @@ model. The function rate-limits to 40 scans per user per hour.
 
 ---
 
-## Known issues and things deliberately unfinished
+## What is left, and how urgent
 
-- **Seeded demo data is mixed into the real app.** `app/(tabs)/index.tsx`,
-  `app/flip/[id].tsx`, `app/checkout/[id].tsx`, `app/user/[id].tsx`,
-  `app/collection/[id].tsx` and `app/chat/[id].tsx` all contain hardcoded demo
-  listings and sellers, so the app is never empty during a demo. Ids `'1'`-`'5'`
-  are demo flips; anything else is a real UUID. **This must be removed before a
-  real launch** - a tester can message a seller who does not exist. `isRealFlipId()`
-  in `lib/ids.ts` is what distinguishes them.
-- **Photos upload at full camera resolution.** A phone photo is 3-5MB and the
-  feed downloads them at that size. `expo-image-manipulator` is already a
-  dependency; resizing to ~1080px on upload would cut bandwidth and storage
-  roughly tenfold. Not done because it changes how listing photos look.
-- **Payment is simulated.** Checkout creates an order row. There is no payment
-  processor; the card on the checkout screen is fixed text.
-- **Shipping is not real.** No labels, tracking, or address validation.
-- **The web bundle is ~2.3MB**, which is slow on a phone's first load. Fixing it
-  means lazy-loading the heavy screens.
-- **No password reset flow.** Supabase supports it; the screen was never built.
-- **Collections are static.** `app/collection/[id].tsx` is entirely hardcoded.
+Three tiers, and the distinction matters. A missing password reset is not the
+same kind of thing as a missing animation, and filing them together is how a
+project rots after handoff. **Anything under "core, incomplete" is a feature
+this product is expected to have** - it is unbuilt, not declined.
+
+### Core, incomplete - build these before calling the product finished
+
+| | Why it is core |
+|---|---|
+| Real payments | Shopping is the whole point; checkout currently creates an order and charges nothing |
+| Order history for buyers | Orders appear in the Inbox feed but there is no list of what you have bought |
+| Change password while signed in | Reset-by-email exists; changing a known password does not |
+| Account deletion | Users are entitled to it and app stores require it |
+| Email verification enforcement | Supabase can require it; the app does not check |
+| Push notifications for offers and messages | Without them a seller never learns an offer arrived unless they reopen the app |
+| Image resizing on upload | Photos upload at 3-5MB each, straight from the camera |
+
+### Known issues - documented, lower risk
+
+- **Payment is simulated.** Checkout creates an order row. The card shown on the
+  checkout screen is fixed text, not a real payment method.
+- **Shipping is not real.** No labels, tracking or address validation.
+- **The web bundle is ~2.3MB**, slow on a phone's first load. Fixing it means
+  lazy-loading the heavy screens.
+- **The feed falls back to demo listings only when the database has none.** With
+  real listings present, none appear. Ids `'1'`-`'5'` are the demo ones;
+  `isRealFlipId()` in `lib/ids.ts` distinguishes them. This should still be
+  removed before a real launch.
+
+### Optional - genuinely can wait
+
+Animations, richer profile customisation, recommendation ranking, additional
+social features.
+
+## Fixed during the pre-launch audit - worth not regressing
+
+These were all real, reproduced failures. If you change this code, re-check them.
+
+- **Missing items rendered a demo product.** A listing id that did not exist
+  showed a real-looking hoodie at a real-looking price, and its checkout screen
+  offered a placeable order. `components/NotFound.tsx` now covers all three
+  screens. Never reintroduce a `?? FLIPS['1']`-style fallback.
+- **The Inbox invented activity.** Six hardcoded messages, offers and shipping
+  notices were merged into real data unconditionally.
+- **Real conversations never reached the Inbox** - `getMyThreads()` did not exist.
+- **Every X and Back was dead when there was no history.** Use `goBack()`.
+- **Signup failed outright on a taken username**, and told you nothing when the
+  form was incomplete.
+- **The scanner was unreachable** and its result led nowhere purchasable.
+- **The feed made one request per card** for like and comment counts.
 
 ## Future work
 
-Roughly in the order it would pay off:
-
-1. Remove seeded demo data and replace with real seeded accounts
-2. Resize images on upload
-3. Password reset
-4. Real payments
-5. Push notifications for offers and messages
-6. Lazy-load screens to shrink the bundle
-7. Native builds (EAS) so iPhone testing does not depend on the web app
-
----
+See "What is left, and how urgent" above - that section is the real backlog,
+ordered by whether the product is incomplete without it.
 
 ## Testing
 

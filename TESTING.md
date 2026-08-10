@@ -10,21 +10,28 @@ Two parts: **tasks to give a tester** (what your friends do), and a
 Do not explain anything first. Hand them the link and these tasks. Where they
 get stuck is the result you are collecting; if you explain, you lose it.
 
-> 1. Make an account.
-> 2. Set up your username.
-> 3. Find the main feed of sweatshirts.
-> 4. Find one you like and open it.
-> 5. Like it, and leave a comment.
-> 6. Find the scanner.
-> 7. Scan any piece of clothing near you.
-> 8. From that scan, find something you could buy.
-> 9. Go back to the feed.
-> 10. Find a different sweatshirt and start buying it (stop before you confirm).
-> 11. Find your own profile.
+Phrase every task by the **goal**, never the control. "Tap Scan" tests whether
+they can read; "show me how you'd find one like it" tests whether the app
+communicates. If they cannot find it, that is the finding - do not rescue them.
+
+> 1. Make yourself an account.
+> 2. Show me what this app is for.
+> 3. Find a sweatshirt you actually like.
+> 4. Tell that person you like it.
+> 5. You are holding a hoodie you own. Show me how you would find one like it
+>    on here.
+> 6. From that, find something you could actually buy.
+> 7. Go back and find a different one.
+> 8. Start buying it - stop before you confirm.
+> 9. Show me your account.
+> 10. Pretend you forgot your password. What would you do?
 
 ### What to write down
 
-For each task, note only these. Do not note your explanations.
+For each task, note only these. Do not note your explanations - and try not to
+give any. Count to ten in your head before you help; most people find it in
+eight, and what they tried first is the most useful thing you will learn all
+week.
 
 | | |
 |---|---|
