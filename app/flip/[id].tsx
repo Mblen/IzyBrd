@@ -27,6 +27,7 @@ import { getCommentCount, subscribeComments } from '../../lib/comments';
 import { getSellerRating, SellerRating } from '../../lib/reviews';
 import { requireAuth } from '../../lib/session';
 import CommentsSheet from '../../components/CommentsSheet';
+import NotFound from '../../components/NotFound';
 
 type FlipView = {
   seller: string; rating: number; reviews: number;
@@ -150,36 +151,38 @@ export default function FlipDetailScreen() {
     return () => { active = false; };
   }, [id]);
 
-  const flip = mock ?? dbFlip ?? FLIPS['1'];
-  const total = flip.price + SHIPPING;
+  // No fallback to a seeded flip: a listing that failed to load must not
+  // render as some other real-looking product at some other price.
+  const flip = mock ?? dbFlip;
+  const total = (flip?.price ?? 0) + SHIPPING;
 
   // Real sellers show live ratings; seeded mock flips keep their dressing.
   useEffect(() => {
-    if (!flip.sellerId) return;
+    if (!flip?.sellerId) return;
     let active = true;
     getSellerRating(flip.sellerId).then(r => { if (active) setSellerRating(r); }).catch(() => {});
     return () => { active = false; };
-  }, [flip.sellerId]);
+  }, [flip?.sellerId]);
 
-  const hasRealSeller = !!flip.sellerId;
-  const ratingValue = hasRealSeller ? (sellerRating?.avg ?? 0) : flip.rating;
-  const reviewCount = hasRealSeller ? (sellerRating?.count ?? 0) : flip.reviews;
+  const hasRealSeller = !!flip?.sellerId;
+  const ratingValue = hasRealSeller ? (sellerRating?.avg ?? 0) : (flip?.rating ?? 0);
+  const reviewCount = hasRealSeller ? (sellerRating?.count ?? 0) : (flip?.reviews ?? 0);
 
   // Hero media: the video plays first (video-first), then every photo
-  const galleryPhotos = flip.photos?.length ? flip.photos : [flip.image || DEFAULT_FLIP_IMAGE];
+  const galleryPhotos = flip?.photos?.length ? flip.photos : [flip?.image || DEFAULT_FLIP_IMAGE];
   const media: { kind: 'video' | 'photo'; uri: string }[] = [
-    ...(flip.video ? [{ kind: 'video' as const, uri: flip.video }] : []),
+    ...(flip?.video ? [{ kind: 'video' as const, uri: flip.video }] : []),
     ...galleryPhotos.map(uri => ({ kind: 'photo' as const, uri })),
   ];
 
   const localSold = useSyncExternalStore(subscribeLocalOrders, () => isLocalSold(id ?? ''), () => isLocalSold(id ?? ''));
-  const sold = flip.status === 'sold' || localSold;
+  const sold = flip?.status === 'sold' || localSold;
 
   // Quick-pick offers: 10% / 15% / 20% under asking
-  const quickOffers = [0.9, 0.85, 0.8].map(m => Math.floor(flip.price * m));
+  const quickOffers = [0.9, 0.85, 0.8].map(m => Math.floor((flip?.price ?? 0) * m));
 
   const sendOffer = async () => {
-    if (!offerAmount || Number(offerAmount) <= 0 || offerSending) return;
+    if (!flip || !offerAmount || Number(offerAmount) <= 0 || offerSending) return;
     setOfferError(null);
     setOfferSending(true);
     try {
@@ -209,6 +212,8 @@ export default function FlipDetailScreen() {
       </View>
     );
   }
+
+  if (!flip) return <NotFound />;
 
   return (
     <View style={s.container}>

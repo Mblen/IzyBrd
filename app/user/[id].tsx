@@ -12,6 +12,7 @@ import { getFlipsBySeller } from '../../lib/flips';
 import { getFollowCounts, isFollowing, follow, unfollow } from '../../lib/follows';
 import { getSellerRating, getSellerReviews, Review, SellerRating } from '../../lib/reviews';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import NotFound from '../../components/NotFound';
 
 type SellerView = {
   handle: string; name: string; rating: number; reviews: number;
@@ -133,12 +134,14 @@ export default function UserProfileScreen() {
     return () => { active = false; };
   }, [username]);
 
-  // Real seller when found; otherwise the seeded mock (or a safe default)
-  const seller: SellerView = mockSeller ?? dbSeller ?? SELLERS['christybb'];
-  const followerCount = counts ? counts.followers : seller.followers;
+  // Real seller when found, otherwise the seeded mock. No default: showing a
+  // different person's profile and reviews for a handle that does not exist is
+  // worse than saying the profile is gone.
+  const seller: SellerView | null = mockSeller ?? dbSeller;
+  const followerCount = counts ? counts.followers : (seller?.followers ?? 0);
   // Real sellers use live review data; seeded mock sellers keep their dressing.
-  const ratingValue = sellerId ? (sellerRating?.avg ?? 0) : seller.rating;
-  const reviewCount = sellerId ? (sellerRating?.count ?? 0) : seller.reviews;
+  const ratingValue = sellerId ? (sellerRating?.avg ?? 0) : (seller?.rating ?? 0);
+  const reviewCount = sellerId ? (sellerRating?.count ?? 0) : (seller?.reviews ?? 0);
 
   const toggleFollow = async () => {
     // Seeded mock sellers keep the simple local toggle
@@ -160,13 +163,22 @@ export default function UserProfileScreen() {
     }
   };
 
-  const data = activeTab === 0 ? seller.flips : [];
+  const data = activeTab === 0 ? (seller?.flips ?? []) : [];
 
   if (loading) {
     return (
       <SafeAreaView style={[s.container, s.loadingWrap]} edges={['top']}>
         <ActivityIndicator color="#fff" />
       </SafeAreaView>
+    );
+  }
+
+  if (!seller) {
+    return (
+      <NotFound
+        title="This profile is gone"
+        message="The account may have been closed or the link may be out of date."
+      />
     );
   }
 

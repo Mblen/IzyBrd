@@ -18,6 +18,7 @@ import { getFlip } from '../../lib/flips';
 import { isRealFlipId } from '../../lib/ids';
 import { addReview } from '../../lib/reviews';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import NotFound from '../../components/NotFound';
 
 const SHIPPING = 5;
 const FEE = 2;
@@ -68,11 +69,13 @@ export default function CheckoutScreen() {
     return () => { active = false; };
   }, [id]);
 
-  const flip = mock ?? dbFlip ?? FLIPS['1'];
-  const total = flip.price + SHIPPING + FEE;
+  // No fallback to a seeded flip. Rendering a different product at a different
+  // price on the payment screen is the worst possible place to guess.
+  const flip = mock ?? dbFlip;
+  const total = (flip?.price ?? 0) + SHIPPING + FEE;
 
   const placeOrder = async () => {
-    if (placing) return;
+    if (placing || !flip) return;
     setError(null);
     setPlacing(true);
     try {
@@ -100,10 +103,19 @@ export default function CheckoutScreen() {
     );
   }
 
-  const canReview = isRealFlipId(id ?? '') && !!flip.sellerId && !!orderId;
+  if (!flip) {
+    return (
+      <NotFound
+        title="This item is no longer available"
+        message="It may have sold or been taken down, so there is nothing to check out."
+      />
+    );
+  }
+
+  const canReview = isRealFlipId(id ?? '') && !!flip?.sellerId && !!orderId;
 
   const submitReview = async () => {
-    if (!orderId || !flip.sellerId || rating === 0 || reviewSubmitting) return;
+    if (!orderId || !flip?.sellerId || rating === 0 || reviewSubmitting) return;
     setReviewSubmitting(true);
     try {
       await addReview(orderId, flip.sellerId, rating, reviewBody);
