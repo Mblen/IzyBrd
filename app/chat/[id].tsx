@@ -25,24 +25,6 @@ type Msg = {
   time: string;
 };
 
-// Mock conversation starters keyed by sender name
-const SEEDS: Record<string, Msg[]> = {
-  christybb: [
-    { id: 'm1', from: 'them', text: `Hey! Is the Chase Crew still available?`, time: '2m' },
-  ],
-  haileyflipper: [
-    { id: 'm1', from: 'them', text: `love your closet btw`, time: '15m' },
-    { id: 'm2', from: 'them', offer: { amount: 30, flipTitle: 'Remi Mock Neck', status: 'pending' }, time: '11m' },
-  ],
-  themiaedits: [
-    { id: 'm1', from: 'them', text: `Would you do $48 shipped for the Nash Crew?`, time: '5h' },
-  ],
-  jaxarchive: [
-    { id: 'm1', from: 'me', offer: { amount: 50, flipTitle: 'Hailey Crop', status: 'accepted' }, time: '1d' },
-    { id: 'm2', from: 'them', text: `Deal! Shipping it out tomorrow morning.`, time: '1d' },
-  ],
-};
-
 function OfferCard({
   msg,
   onRespond,
@@ -115,10 +97,11 @@ export default function ChatScreen() {
           return;
         }
       }
-      // Seed conversation fallback (mock inbox users)
+      // Not a real user - nothing to load. The composer stays disabled and
+      // the empty state explains, rather than inventing a conversation.
       if (active) {
         setRecipientId(null);
-        setMessages(SEEDS[name] ?? []);
+        setMessages([]);
       }
     })();
     return () => { active = false; cleanup?.(); };

@@ -9,49 +9,11 @@ import { router, useFocusEffect } from 'expo-router';
 import { getMyOffers, OfferItem } from '../../lib/offers';
 import { getMyOrders, OrderItem } from '../../lib/orders';
 import { getMyActivity, ActivityItem } from '../../lib/activity';
+import { getMyThreads, ThreadSummary } from '../../lib/messages';
 
 // Two tabs, not five. Offers and orders are things that happened to you, not
 // conversations, so they belong with the rest of the activity.
 const TABS = ['Messages', 'Activity'];
-
-const ITEMS = [
-  {
-    id: '1', tab: 'Messages', type: 'message',
-    avatar: 'CB', name: 'christybb',
-    preview: 'Hey! Is the Chase Crew still available?',
-    time: '2m', unread: true,
-  },
-  {
-    id: '2', tab: 'Offers', type: 'offer',
-    avatar: 'HA', name: 'haileyflipper',
-    preview: 'Sent you an offer: $30 on Remi Mock Neck',
-    time: '11m', unread: true,
-  },
-  {
-    id: '3', tab: 'Orders', type: 'order',
-    avatar: 'UPS', name: 'Order #2241',
-    preview: 'Your Christy Hoodie has shipped! ETA Wed.',
-    time: '1h', unread: false,
-  },
-  {
-    id: '6', tab: 'Messages', type: 'message',
-    avatar: 'TM', name: 'themiaedits',
-    preview: 'Would you do $48 shipped for the Nash Crew?',
-    time: '5h', unread: false,
-  },
-  {
-    id: '7', tab: 'Offers', type: 'offer',
-    avatar: 'JA', name: 'jaxarchive',
-    preview: 'Your offer of $50 on Hailey Crop was accepted!',
-    time: '1d', unread: false,
-  },
-  {
-    id: '8', tab: 'Orders', type: 'order',
-    avatar: 'CHK', name: 'Order #2238',
-    preview: 'Delivered! How was the Chase Crew?',
-    time: '2d', unread: false,
-  },
-];
 
 function typeIcon(type: string): keyof typeof Ionicons.glyphMap {
   if (type === 'message') return 'chatbubble-outline';
@@ -68,6 +30,7 @@ export default function InboxScreen() {
   const [sentOffers, setSentOffers] = useState<OfferItem[]>([]);
   const [myOrders, setMyOrders] = useState<OrderItem[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [threads, setThreads] = useState<ThreadSummary[]>([]);
 
   // Load offers + orders + activity from the database whenever the inbox gains focus
   useFocusEffect(
@@ -76,6 +39,7 @@ export default function InboxScreen() {
       getMyOffers().then(o => { if (live) setSentOffers(o); }).catch(() => {});
       getMyOrders().then(o => { if (live) setMyOrders(o); }).catch(() => {});
       getMyActivity().then(a => { if (live) setActivity(a); }).catch(() => {});
+      getMyThreads().then(t => { if (live) setThreads(t); }).catch(() => {});
       return () => { live = false; };
     }, [])
   );
@@ -107,7 +71,17 @@ export default function InboxScreen() {
     time: a.time, unread: a.unread,
   }));
 
-  const all = [...activityItems, ...orderItems, ...sentItems, ...ITEMS];
+  // Real conversations. These are the only thing on the Messages tab now -
+  // it used to list invented threads from people who do not exist.
+  const messageItems = threads.map(t => ({
+    id: `thread-${t.username}`, tab: 'Messages', type: 'message',
+    avatar: t.username.slice(0, 2).toUpperCase(),
+    name: t.username,
+    preview: t.preview,
+    time: '', unread: t.theirTurn,
+  }));
+
+  const all = [...messageItems, ...activityItems, ...orderItems, ...sentItems];
   // Messages are conversations; everything else (offers, orders, likes,
   // follows, comments) is activity.
   const list = active === 'Messages'
@@ -153,8 +127,26 @@ export default function InboxScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {list.length === 0 && (
           <View style={s.empty}>
-            <Ionicons name="mail-open-outline" size={36} color="#ccc" />
-            <Text style={s.emptyTxt}>Nothing here yet</Text>
+            <Ionicons
+              name={active === 'Messages' ? 'chatbubbles-outline' : 'notifications-outline'}
+              size={36}
+              color="#777"
+            />
+            <Text style={s.emptyTxt}>
+              {active === 'Messages' ? 'No messages yet' : 'No activity yet'}
+            </Text>
+            <Text style={s.emptySub}>
+              {active === 'Messages'
+                ? 'Ask a seller about a sweatshirt and the conversation shows up here.'
+                : 'Likes, comments, offers and orders on your sweatshirts show up here.'}
+            </Text>
+            <TouchableOpacity
+              style={s.emptyBtn}
+              activeOpacity={0.85}
+              onPress={() => router.push('/(tabs)' as any)}
+            >
+              <Text style={s.emptyBtnTxt}>Browse sweatshirts</Text>
+            </TouchableOpacity>
           </View>
         )}
         {list.map((item, idx) => (
@@ -225,7 +217,12 @@ const s = StyleSheet.create({
   preview: { fontSize: 13, color: '#888', flex: 1 },
   previewUnread: { color: '#ccc', fontWeight: '600' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' },
-  empty: { alignItems: 'center', paddingTop: 80, gap: 10 },
-  emptyIcon: { fontSize: 36 },
-  emptyTxt: { fontSize: 15, color: '#888' },
+  empty: { alignItems: 'center', paddingTop: 72, paddingHorizontal: 40, gap: 8 },
+  emptyTxt: { fontSize: 17, fontWeight: '800', color: '#fff', marginTop: 4 },
+  emptySub: { fontSize: 13, color: '#8a8a8a', textAlign: 'center', lineHeight: 19 },
+  emptyBtn: {
+    backgroundColor: '#fff', borderRadius: 24, paddingHorizontal: 20,
+    minHeight: 44, justifyContent: 'center', marginTop: 10,
+  },
+  emptyBtnTxt: { fontSize: 14, fontWeight: '800', color: '#000' },
 });

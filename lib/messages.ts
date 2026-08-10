@@ -24,6 +24,51 @@ export async function getRecipientId(username: string): Promise<string | null> {
   return (data as { id: string }).id;
 }
 
+export type ThreadSummary = {
+  username: string;
+  preview: string;
+  createdAt: string;
+  // True when the last word in the thread was theirs - a cheap stand-in for
+  // unread until the messages table carries a read flag.
+  theirTurn: boolean;
+};
+
+// Every conversation the signed-in user is part of, newest first, one row per
+// person. Without this the Inbox never showed real conversations at all: a
+// message sent from a listing went into the database and then appeared nowhere,
+// so the person receiving it had no way to know it existed.
+export async function getMyThreads(): Promise<ThreadSummary[]> {
+  const { data: auth } = await supabase.auth.getUser();
+  const me = auth.user?.id;
+  if (!me) return [];
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('sender_id, recipient_id, body, created_at, sender:sender_id(username), recipient:recipient_id(username)')
+    .or(`sender_id.eq.${me},recipient_id.eq.${me}`)
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (error) return [];
+
+  // Newest first, so the first time we see a person is their latest message.
+  const seen = new Set<string>();
+  const threads: ThreadSummary[] = [];
+  for (const m of (data ?? []) as any[]) {
+    const theirs = m.sender_id === me;
+    const other = theirs ? m.recipient : m.sender;
+    const username = other?.username;
+    if (!username || seen.has(username)) continue;
+    seen.add(username);
+    threads.push({
+      username,
+      preview: theirs ? `You: ${m.body}` : m.body,
+      createdAt: m.created_at,
+      theirTurn: !theirs,
+    });
+  }
+  return threads;
+}
+
 // All messages between the signed-in user and the recipient, oldest first.
 export async function getThread(recipientId: string): Promise<ChatMessage[]> {
   const { data: auth } = await supabase.auth.getUser();
