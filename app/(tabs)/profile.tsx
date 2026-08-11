@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, FlatList, Image, useWindowDimensions, Share, Platform,
+  StyleSheet, FlatList, Image, useWindowDimensions, Share, Platform, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -73,7 +73,16 @@ export default function ProfileScreen() {
   const city = profile?.city || 'Miami, FL';
   const avatarInitials = initials(displayName);
 
+  // Settings live behind a gear, the way every app people already use puts
+  // them. Signing out used to be a bare icon in the header that took effect on
+  // the first tap, with no confirmation - one mis-tap and you were out.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  const closeSettings = () => { setSettingsOpen(false); setConfirmSignOut(false); };
+
   const onSignOut = () => {
+    closeSettings();
     // The root layout sends us to /auth when the session clears
     signOut();
   };
@@ -130,7 +139,13 @@ export default function ProfileScreen() {
             <Ionicons name="share-outline" size={22} color="#fff" />
           </TouchableOpacity>
           <Text style={s.username}>{handle}</Text>
-          <TouchableOpacity style={s.iconBtn} onPress={onSignOut}><Ionicons name="log-out-outline" size={24} color="#fff" /></TouchableOpacity>
+          <TouchableOpacity
+            style={s.iconBtn}
+            onPress={() => setSettingsOpen(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="settings-outline" size={23} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         {/* Avatar + stats */}
@@ -178,14 +193,18 @@ export default function ProfileScreen() {
             full-width button; editing the profile is a quiet pencil. */}
         <View style={s.actionsRow}>
           <TouchableOpacity
-            style={[s.actionBtn, s.actionBtnAlt, { flex: 1 }]}
+            style={s.actionBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push('/edit-profile' as any)}
+          >
+            <Text style={s.actionTxt}>Edit profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.actionBtn, s.actionBtnAlt]}
             activeOpacity={0.85}
             onPress={() => router.push('/wardrobe' as any)}
           >
             <Text style={[s.actionTxt, s.actionTxtAlt]}>My Wardrobe</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.editBtn} activeOpacity={0.85} onPress={() => router.push('/edit-profile' as any)}>
-            <Ionicons name="create-outline" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -265,6 +284,85 @@ export default function ProfileScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Settings. Only things that actually exist are listed - a menu full of
+          options that do nothing is worse than a short menu. */}
+      <Modal
+        visible={settingsOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeSettings}
+      >
+        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={closeSettings}>
+          <TouchableOpacity style={s.sheet} activeOpacity={1}>
+            <View style={s.sheetGrip} />
+            <Text style={s.sheetTitle}>Settings</Text>
+
+            <TouchableOpacity
+              style={s.sheetRow}
+              activeOpacity={0.7}
+              onPress={() => { closeSettings(); router.push('/edit-profile' as any); }}
+            >
+              <Ionicons name="person-outline" size={20} color="#fff" />
+              <Text style={s.sheetTxt}>Edit profile</Text>
+              <Ionicons name="chevron-forward" size={17} color="#666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={s.sheetRow}
+              activeOpacity={0.7}
+              onPress={() => { closeSettings(); router.push('/wardrobe' as any); }}
+            >
+              <Ionicons name="shirt-outline" size={20} color="#fff" />
+              <Text style={s.sheetTxt}>My Wardrobe</Text>
+              <Ionicons name="chevron-forward" size={17} color="#666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={s.sheetRow}
+              activeOpacity={0.7}
+              onPress={() => { closeSettings(); shareCloset(); }}
+            >
+              <Ionicons name="share-outline" size={20} color="#fff" />
+              <Text style={s.sheetTxt}>Share my closet</Text>
+              <Ionicons name="chevron-forward" size={17} color="#666" />
+            </TouchableOpacity>
+
+            <View style={s.sheetDivider} />
+
+            {confirmSignOut ? (
+              <View style={s.confirmBlock}>
+                <Text style={s.confirmTxt}>Log out of @{handle.replace('@', '')}?</Text>
+                <View style={s.confirmRow}>
+                  <TouchableOpacity
+                    style={[s.confirmBtn, s.confirmBtnQuiet]}
+                    activeOpacity={0.85}
+                    onPress={() => setConfirmSignOut(false)}
+                  >
+                    <Text style={s.confirmBtnQuietTxt}>Stay logged in</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.confirmBtn} activeOpacity={0.85} onPress={onSignOut}>
+                    <Text style={s.confirmBtnTxt}>Log out</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={s.sheetRow}
+                activeOpacity={0.7}
+                onPress={() => setConfirmSignOut(true)}
+              >
+                <Ionicons name="log-out-outline" size={20} color="#ff6b6b" />
+                <Text style={[s.sheetTxt, s.sheetTxtDanger]}>Log out</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity style={s.sheetClose} activeOpacity={0.7} onPress={closeSettings}>
+              <Text style={s.sheetCloseTxt}>Close</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -293,7 +391,10 @@ const s = StyleSheet.create({
   cityIcon: { fontSize: 11 },
   city: { fontSize: 12, color: '#666' },
   actionsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, paddingBottom: 14 },
-  actionBtn: { flex: 1, borderWidth: 1, borderColor: '#333', borderRadius: 8, paddingVertical: 9, alignItems: 'center' },
+  actionBtn: {
+    flex: 1, borderWidth: 1, borderColor: '#333', borderRadius: 10,
+    minHeight: 44, alignItems: 'center', justifyContent: 'center',
+  },
   editBtn: {
     width: 42, borderWidth: 1, borderColor: '#333', borderRadius: 8,
     alignItems: 'center', justifyContent: 'center',
@@ -301,6 +402,43 @@ const s = StyleSheet.create({
   actionBtnAlt: { backgroundColor: '#fff' },
   actionTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
   actionTxtAlt: { color: '#000' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  sheet: {
+    width: '100%', maxWidth: 480, alignSelf: 'center',
+    backgroundColor: '#161616', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    paddingHorizontal: 8, paddingTop: 10, paddingBottom: 26,
+  },
+  sheetGrip: {
+    width: 38, height: 4, borderRadius: 2, backgroundColor: '#3a3a3a',
+    alignSelf: 'center', marginBottom: 10,
+  },
+  sheetTitle: {
+    fontSize: 13, fontWeight: '800', color: '#888',
+    paddingHorizontal: 14, paddingBottom: 6, textTransform: 'uppercase', letterSpacing: 0.6,
+  },
+  sheetRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingHorizontal: 14, minHeight: 52, borderRadius: 12,
+  },
+  sheetTxt: { flex: 1, fontSize: 15, color: '#fff', fontWeight: '600' },
+  sheetTxtDanger: { color: '#ff6b6b' },
+  sheetDivider: { height: 1, backgroundColor: '#262626', marginVertical: 6, marginHorizontal: 14 },
+  confirmBlock: { paddingHorizontal: 14, paddingVertical: 10, gap: 10 },
+  confirmTxt: { fontSize: 15, color: '#fff', fontWeight: '700' },
+  confirmRow: { flexDirection: 'row', gap: 10 },
+  confirmBtn: {
+    flex: 1, backgroundColor: '#ff6b6b', borderRadius: 12,
+    minHeight: 46, alignItems: 'center', justifyContent: 'center',
+  },
+  confirmBtnTxt: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  confirmBtnQuiet: { backgroundColor: '#2a2a2a' },
+  confirmBtnQuietTxt: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  sheetClose: {
+    marginTop: 8, marginHorizontal: 14, minHeight: 48, borderRadius: 12,
+    backgroundColor: '#232323', alignItems: 'center', justifyContent: 'center',
+  },
+  sheetCloseTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+
   promoCard: { marginHorizontal: 16, marginBottom: 14, backgroundColor: '#1a1a1a', borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center' },
   promoInner: { flex: 1, gap: 3 },
   promoTitle: { fontSize: 13, fontWeight: '700', color: '#fff' },

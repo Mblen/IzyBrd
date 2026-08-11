@@ -25,7 +25,9 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 export default function WardrobeScreen() {
   const { width: winW } = useWindowDimensions();
   const colW = Math.min(winW, 480);
-  const cell = (colW - 4 * 4) / 3; // 3-column grid with small gaps
+  // Cards in a sideways row. Roughly half the width, so the next one is always
+  // half-visible - that peek is what tells people the row scrolls.
+  const cell = Math.round((colW - 46) / 2);
 
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,11 +210,18 @@ export default function WardrobeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* How it works - three plain steps */}
+        {/* How it works. Step 1 names scanning outright: people do not work out
+            on their own that pointing a camera is an option. */}
         <View style={s.steps}>
-          <Text style={s.step}><Text style={s.stepNum}>1  </Text>Add a photo of your sweatshirt</Text>
-          <Text style={s.step}><Text style={s.stepNum}>2  </Text>We fill in the details for you</Text>
-          <Text style={s.step}><Text style={s.stepNum}>3  </Text>Tap "Flip the bird" to sell it</Text>
+          <Text style={s.step}>
+            <Text style={s.stepNum}>1  </Text>Scan it with your camera, or add a photo
+          </Text>
+          <Text style={s.step}>
+            <Text style={s.stepNum}>2  </Text>We work out the brand and name for you
+          </Text>
+          <Text style={s.step}>
+            <Text style={s.stepNum}>3  </Text>Tap "Flip the bird" to put it up for sale
+          </Text>
         </View>
 
         {loading ? (
@@ -225,8 +234,12 @@ export default function WardrobeScreen() {
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={s.gridHelp}>Tap a photo to edit its details · "Flip the bird" to sell</Text>
-            <View style={s.grid}>
+            <Text style={s.gridHelp}>Swipe sideways · tap a photo to edit it</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.row}
+            >
               {items.map(item => (
                 <View key={item.id} style={[s.cell, { width: cell }]}>
                   <TouchableOpacity
@@ -254,7 +267,7 @@ export default function WardrobeScreen() {
                   </TouchableOpacity>
                 </View>
               ))}
-            </View>
+            </ScrollView>
             <View style={{ height: 40 }} />
           </ScrollView>
         )}
@@ -388,7 +401,9 @@ const s = StyleSheet.create({
   emptyTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
   emptyTxt: { fontSize: 13, color: '#666' },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, paddingHorizontal: 4 },
+  // A sideways row rather than a wrapping grid: swiping through your clothes
+  // reads like a rail of hangers, and it leaves the cards big enough to see.
+  row: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingRight: 28 },
   cell: { marginBottom: 6 },
   cellImgWrap: {
     borderRadius: 10, overflow: 'hidden', backgroundColor: '#161616',

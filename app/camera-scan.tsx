@@ -355,9 +355,14 @@ const s = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 12, paddingTop: 8,
+    // The camera is a native view (a <video> element on the web) and will sit
+    // above absolutely-positioned siblings unless told otherwise. Without this
+    // the close button is visible but swallows no taps, so there is no way out
+    // of the scanner. elevation is the Android half of the same thing.
+    zIndex: 20, elevation: 20,
   },
   roundBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center',
   },
   statusPill: {
