@@ -31,21 +31,24 @@ Then press `w` for web, or scan the QR code with Expo Go on a phone.
 npx expo export --platform web
 ```
 
-That writes `dist/`. **`expo export` does not create `dist/_redirects`, and the
-deploy needs it** - without it every route except `/` returns the SPA fallback
-for real files too, which silently breaks the icon font and leaves screens
-blank. Recreate it after every export:
-
-```bash
-printf '/*    /index.html   200\n' > dist/_redirects
-```
-
-Then deploy. Use the CLI, not the Netlify drag-and-drop upload - the drag-and-drop
-has silently dropped files before:
+That writes `dist/`. Then deploy it:
 
 ```bash
 npx netlify-cli deploy --prod --dir dist
 ```
+
+Live at **https://izybrd.netlify.app** (Netlify project `izybrd`). The first
+deploy from a fresh clone will ask which project to link - pick that one.
+
+Two things worth knowing:
+
+- **The SPA redirect lives in `netlify.toml`, not in `dist/_redirects`.** The
+  deploy runs a build that regenerates `dist/`, so anything written there by
+  hand is deleted before it is served. Without the redirect, every route except
+  `/` 404s and the icon font falls through to the HTML fallback, which leaves
+  screens blank.
+- **Use the CLI, not Netlify's drag-and-drop upload** - the drag-and-drop has
+  silently dropped files before.
 
 ---
 
@@ -124,8 +127,8 @@ Each file in `lib/` owns one domain and mirrors a database table:
 ## Database
 
 Schema lives in `supabase/schema.sql`, which is idempotent - safe to paste into
-the SQL editor and run again at any time. `supabase/pending.sql` holds changes
-not yet applied to the live project.
+the SQL editor and run again at any time. It is the single source of truth for
+the database - if you change the schema, change it here too.
 
 | Table | Purpose |
 |---|---|

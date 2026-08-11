@@ -48,3 +48,9 @@ yarn-error.*
 
 # Local Netlify folder
 .netlify
+
+# Working documents - reports, demo scripts. Kept locally, not part of the app.
+*.docx
+
+# Claude Code / AI tooling
+.claude/
