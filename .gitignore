@@ -45,3 +45,6 @@ yarn-error.*
 
 # Office temp/lock files
 ~$*
+
+# Local Netlify folder
+.netlify
