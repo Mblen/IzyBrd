@@ -105,6 +105,7 @@ Each file in `lib/` owns one domain and mirrors a database table:
 | `scan.ts` | Calls the AI scanning function |
 | `nav.ts` | `goBack()` - see "Conventions" |
 | `ids.ts` | Id helpers; `storageKey()` for unguessable filenames |
+| `images.ts` | Shrinks photos before upload - see "Conventions" |
 
 ### Conventions worth knowing
 
@@ -119,6 +120,10 @@ Each file in `lib/` owns one domain and mirrors a database table:
 - **Realtime channel names must be unique per subscription.** Two subscriptions
   sharing a channel name crash with "cannot add postgres_changes callbacks after
   subscribe()". Append a random suffix.
+- **Every photo goes through `shrinkImage()` before upload.** Camera photos are
+  several megabytes; nothing here draws one above phone width. Any new upload
+  path should call it, and it must never throw - a photo that will not shrink
+  should still upload.
 - **No box-drawing or unicode art in comments** - it breaks on Windows
   terminals. Plain hyphens only.
 
