@@ -225,7 +225,6 @@ this product is expected to have** - it is unbuilt, not declined.
 | Account deletion | Users are entitled to it and app stores require it |
 | Email verification enforcement | Supabase can require it; the app does not check |
 | Push notifications for offers and messages | Without them a seller never learns an offer arrived unless they reopen the app |
-| Image resizing on upload | Photos upload at 3-5MB each, straight from the camera |
 
 ### Known issues - documented, lower risk
 
@@ -234,6 +233,8 @@ this product is expected to have** - it is unbuilt, not declined.
 - **Shipping is not real.** No labels, tracking or address validation.
 - **The web bundle is ~2.3MB**, slow on a phone's first load. Fixing it means
   lazy-loading the heavy screens.
+- **Video is uploaded as picked.** Photos are shrunk on upload (`lib/images.ts`)
+  but clips are not re-encoded, so a long 4K video is still large.
 - **The feed falls back to demo listings only when the database has none.** With
   real listings present, none appear. Ids `'1'`-`'5'` are the demo ones;
   `isRealFlipId()` in `lib/ids.ts` distinguishes them. This should still be

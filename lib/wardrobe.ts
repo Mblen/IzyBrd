@@ -5,6 +5,7 @@
 
 import { supabase } from './supabase';
 import { storageKey } from './ids';
+import { shrinkImage, LISTING_MAX_DIM } from './images';
 
 export type WardrobeItem = {
   id: string;
@@ -29,7 +30,7 @@ export type WardrobeDetails = {
 async function uploadWardrobePhoto(uri: string, userId: string): Promise<string | null> {
   if (!uri) return null;
   try {
-    const resp = await fetch(uri);
+    const resp = await fetch(await shrinkImage(uri, LISTING_MAX_DIM));
     const arrayBuffer = await resp.arrayBuffer();
     const contentType = resp.headers.get('content-type') ?? 'image/jpeg';
     const ext = contentType.split('/')[1]?.split('+')[0] ?? 'jpg';

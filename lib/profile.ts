@@ -2,6 +2,7 @@
 
 import { supabase } from './supabase';
 import { storageKey } from './ids';
+import { shrinkImage, AVATAR_MAX_DIM } from './images';
 
 export type Profile = {
   id: string;
@@ -53,7 +54,7 @@ export async function uploadAvatar(uri: string): Promise<string | null> {
   const userId = auth.user?.id;
   if (!userId) return null;
   try {
-    const resp = await fetch(uri);
+    const resp = await fetch(await shrinkImage(uri, AVATAR_MAX_DIM, 0.85));
     const arrayBuffer = await resp.arrayBuffer();
     const contentType = resp.headers.get('content-type') ?? 'image/jpeg';
     const ext = contentType.split('/')[1]?.split('+')[0] ?? 'jpg';

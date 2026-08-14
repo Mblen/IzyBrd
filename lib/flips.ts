@@ -4,6 +4,7 @@
 
 import { supabase } from './supabase';
 import { storageKey } from './ids';
+import { shrinkImage, LISTING_MAX_DIM } from './images';
 
 // Shown when a flip has no photo, so a card never renders as a black box.
 export const DEFAULT_FLIP_IMAGE =
@@ -51,7 +52,11 @@ async function uploadMedia(
 ): Promise<string | null> {
   if (!uri) return null;
   try {
-    const resp = await fetch(uri);
+    // Photos get shrunk first; video is passed through untouched.
+    const source = fallbackType.startsWith('image/')
+      ? await shrinkImage(uri, LISTING_MAX_DIM)
+      : uri;
+    const resp = await fetch(source);
     const arrayBuffer = await resp.arrayBuffer();
     const contentType = resp.headers.get('content-type') ?? fallbackType;
     const ext = contentType.split('/')[1]?.split('+')[0] ?? 'bin';

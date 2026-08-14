@@ -115,6 +115,8 @@ happened.
 - [ ] Post a listing with one photo, a title and a price
 - [ ] It appears at the top of the feed
 - [ ] Add several photos and a video
+- [ ] A photo taken on the phone camera posts without a long wait, and still
+      looks sharp full-screen (it is resized to 1080px on upload)
 - [ ] **[F]** Try to post with no photo -> the button says what is missing
 - [ ] Cancel leaves the form and does not trap you
 
