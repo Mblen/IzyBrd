@@ -468,3 +468,25 @@ create policy "users can update their wardrobe"
 drop policy if exists "users can remove from their wardrobe" on public.wardrobe_items;
 create policy "users can remove from their wardrobe"
   on public.wardrobe_items for delete using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------------
+-- scan_events: one row per AI scan, used to rate limit
+-- ---------------------------------------------------------------------------
+-- The limit cannot be held in the edge function's memory: Supabase spreads
+-- requests across instances, so a local counter never accumulates and the cap
+-- never fires. Counting rows here is the only version that actually works.
+--
+-- "caller" is "user:<uuid>" for a signed-in user, or "ip:<address>" otherwise -
+-- the anon key that reaches the function ships publicly in the app bundle, so
+-- anonymous callers have to be counted too.
+create table if not exists public.scan_events (
+  id          bigserial primary key,
+  caller      text not null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists scan_events_caller_idx
+  on public.scan_events (caller, created_at desc);
+
+alter table public.scan_events enable row level security;
+-- No policies on purpose: only the edge function's service role touches this,
+-- and that bypasses RLS. Clients get nothing.

@@ -14,6 +14,7 @@
 // Response: { "title": "...", "style": "Hoodie", "color": "...", "brand_guess": "..." }
 
 import Anthropic from "npm:@anthropic-ai/sdk";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,25 +25,50 @@ const corsHeaders = {
 // Must match the STYLES chips in the app's Sell form
 const STYLES = ["Crew", "Hoodie", "Zip Up", "Mock Neck", "Crop"];
 
-// Each scan costs real money, so cap how often one account can scan. This is
-// per running instance (a soft limit that raises the bar on abuse) - the hard
-// protection is the monthly spend cap set in the Anthropic console.
+// Each scan costs real money, so cap how often one caller can scan.
+//
+// This has to be counted in the database, not in memory. An in-memory Map is
+// per function instance, and Supabase spreads requests across instances, so a
+// local counter never accumulates - measured at 45 straight requests without
+// one being refused. The Anthropic spend cap is still the hard ceiling; this
+// stops a single caller getting there.
 const MAX_SCANS_PER_HOUR = 40;
-const HOUR_MS = 60 * 60 * 1000;
-const recentScans = new Map<string, number[]>();
 
-function overLimit(userId: string): boolean {
-  const now = Date.now();
-  const recent = (recentScans.get(userId) ?? []).filter(t => now - t < HOUR_MS);
-  recent.push(now);
-  recentScans.set(userId, recent);
-  // Don't let the map grow without bound
-  if (recentScans.size > 5000) {
-    for (const [k, v] of recentScans) {
-      if (!v.some(t => now - t < HOUR_MS)) recentScans.delete(k);
-    }
+// Service role: the function needs to read and write scan_events regardless of
+// who is calling. It never leaves this file and is not exposed to the client.
+const admin = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  { auth: { persistSession: false } },
+);
+
+async function overLimit(key: string): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count, error } = await admin
+      .from("scan_events")
+      .select("*", { count: "exact", head: true })
+      .eq("caller", key)
+      .gte("created_at", since);
+    if (error) return false; // table missing or unreachable: never block a scan
+    if ((count ?? 0) >= MAX_SCANS_PER_HOUR) return true;
+    await admin.from("scan_events").insert({ caller: key });
+    return false;
+  } catch {
+    return false;
   }
-  return recent.length > MAX_SCANS_PER_HOUR;
+}
+
+// Who to count this scan against. A signed-in user is counted by their id.
+// Anyone else is counted by IP - without this fallback the limit was skipped
+// entirely for callers with no user token, and the anon key that reaches this
+// function ships publicly in the app bundle, so the scanner was an unmetered
+// endpoint that spends real money.
+function callerKey(req: Request): string {
+  const user = callerId(req);
+  if (user) return `user:${user}`;
+  const forwarded = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim();
+  return `ip:${forwarded || "unknown"}`;
 }
 
 // The caller's id from the JWT Supabase already verified for us.
@@ -76,8 +102,7 @@ Deno.serve(async (req) => {
     });
 
   try {
-    const user = callerId(req);
-    if (user && overLimit(user)) {
+    if (await overLimit(callerKey(req))) {
       return json(
         { error: "Too many scans right now. Please try again in a little while." },
         429,
