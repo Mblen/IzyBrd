@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { goBack } from '../lib/nav';
 import { Ionicons } from '@expo/vector-icons';
-import { scanCloset, scanFrame, cropToBox, ClosetScanItem } from '../lib/scan';
+import { scanCloset, scanFrame, isRateLimited, cropToBox, ClosetScanItem } from '../lib/scan';
 import { addWardrobeItem } from '../lib/wardrobe';
 
 type Found = {
@@ -102,6 +102,9 @@ export default function ClosetScanScreen() {
         reader.readAsDataURL(blob);
       });
       const again = await scanFrame(base64);
+      // Hit the hourly cap. This is a re-scan of one item that already has
+      // details, so keeping them is the right outcome - nothing to report.
+      if (isRateLimited(again)) return;
       if (again) {
         setItem(item.key, {
           title: again.title || item.title,

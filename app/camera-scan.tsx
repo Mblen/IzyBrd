@@ -14,7 +14,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { goBack } from '../lib/nav';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { scanFrame, ScanResult } from '../lib/scan';
+import { scanFrame, isRateLimited, ScanResult } from '../lib/scan';
 import { addWardrobeItem } from '../lib/wardrobe';
 
 const SCAN_INTERVAL_MS = 5000; // one look every few seconds keeps costs tiny
@@ -89,6 +89,8 @@ export default function CameraScanScreen() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [trouble, setTrouble] = useState(false);
+  // Hit the hourly cap. Stop the loop rather than retry against a closed door.
+  const [capped, setCapped] = useState(false);
   const inFlight = useRef(false);
   const failCount = useRef(0);
 
@@ -106,6 +108,12 @@ export default function CameraScanScreen() {
       if (b64) {
         setLastFrameUri(photo?.uri ?? null);
         const scan = await scanFrame(b64);
+        if (isRateLimited(scan)) {
+          setCapped(true);
+          setAutoScan(false);
+          setTrouble(false);
+          return;
+        }
         if (scan) {
           failCount.current = 0;
           setTrouble(false);
@@ -317,9 +325,11 @@ export default function CameraScanScreen() {
               <Text style={s.hintTxt}>
                 {!ready
                   ? 'Starting camera…'
-                  : trouble
-                    ? 'Having trouble identifying - check your connection, still trying…'
-                    : 'Point the camera at a sweatshirt…'}
+                  : capped
+                    ? 'That is a lot of scanning for one hour. Take a photo instead, or come back later.'
+                    : trouble
+                      ? 'Having trouble identifying - check your connection, still trying…'
+                      : 'Point the camera at a sweatshirt…'}
               </Text>
             </View>
           )}

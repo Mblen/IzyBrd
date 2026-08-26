@@ -34,12 +34,39 @@ export async function scanGarment(imageUrl: string): Promise<ScanResult | null> 
 
 // Live camera scanning: send a captured frame directly as base64 (no storage
 // round-trip), so the viewfinder can identify what it sees in near real time.
-export async function scanFrame(base64: string): Promise<ScanResult | null> {
+export type RateLimited = { rateLimited: true };
+
+export function isRateLimited(x: unknown): x is RateLimited {
+  return !!x && typeof x === 'object' && (x as RateLimited).rateLimited === true;
+}
+
+// Was the failure the hourly cap rather than a bad frame or a dropped
+// connection? Worth distinguishing: telling someone to check their connection
+// when they have simply scanned a lot is a lie, and it leaves the viewfinder
+// retrying against a wall.
+async function wasRateLimited(error: unknown, data: unknown): Promise<boolean> {
+  const looksLikeCap = (msg: unknown) =>
+    typeof msg === 'string' && /too many scans/i.test(msg);
+  if (data && looksLikeCap((data as { error?: string }).error)) return true;
+  try {
+    const res = (error as { context?: Response })?.context;
+    if (res && typeof res.json === 'function') {
+      const body = await res.clone().json();
+      return looksLikeCap(body?.error);
+    }
+  } catch {
+    // not a JSON body - fall through
+  }
+  return false;
+}
+
+export async function scanFrame(base64: string): Promise<ScanResult | RateLimited | null> {
   if (!base64) return null;
   try {
     const { data, error } = await supabase.functions.invoke('scan-item', {
       body: { image_base64: base64, media_type: 'image/jpeg' },
     });
+    if (await wasRateLimited(error, data)) return { rateLimited: true };
     if (error || !data || typeof data.title !== 'string') return null;
     return data as ScanResult;
   } catch {
