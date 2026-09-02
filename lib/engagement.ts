@@ -39,18 +39,6 @@ export async function getLikeCount(flipId: string): Promise<number> {
   return count ?? 0;
 }
 
-export async function hasLiked(flipId: string): Promise<boolean> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return false;
-  const { data } = await supabase
-    .from('likes')
-    .select('flip_id')
-    .eq('user_id', auth.user.id)
-    .eq('flip_id', flipId)
-    .maybeSingle();
-  return !!data;
-}
-
 export async function like(flipId: string): Promise<void> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error('Sign in to like.');
@@ -79,27 +67,19 @@ export async function getMyLikedFlips(): Promise<DbFlip[]> {
 }
 
 // Live-subscribe to like changes for a flip. Returns a cleanup function.
+//
+// The channel name carries a random suffix because two subscriptions sharing
+// one name crash with "cannot add postgres_changes callbacks after
+// subscribe()" - which happens as soon as two screens watch the same flip.
 export function subscribeLikes(flipId: string, onChange: () => void): () => void {
   const channel = supabase
-    .channel(`likes-${flipId}`)
+    .channel(`likes-${flipId}-${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'likes', filter: `flip_id=eq.${flipId}` }, () => onChange())
     .subscribe();
   return () => { supabase.removeChannel(channel); };
 }
 
 // ---- Saves (private) ------------------------------------------------------
-
-export async function hasSaved(flipId: string): Promise<boolean> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return false;
-  const { data } = await supabase
-    .from('saves')
-    .select('flip_id')
-    .eq('user_id', auth.user.id)
-    .eq('flip_id', flipId)
-    .maybeSingle();
-  return !!data;
-}
 
 export async function save(flipId: string): Promise<void> {
   const { data: auth } = await supabase.auth.getUser();

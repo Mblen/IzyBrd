@@ -1,8 +1,9 @@
 // Chat messages between two users, backed by Supabase.
 //
-// Threads are addressed by the other person's username (that's what the chat
-// route carries). Real users -> the `messages` table; mock seed users (from
-// the inbox demo conversations) fall back to local seed data in the screen.
+// Threads are addressed by the other person's username, because that is what
+// the chat route carries. A username that does not resolve to a real profile
+// means there is no thread to load - the screen shows its empty state rather
+// than inventing a conversation.
 
 import { supabase } from './supabase';
 
@@ -102,7 +103,7 @@ export async function subscribeToThread(
   const me = auth.user?.id;
   if (!me) return () => {};
   const channel = supabase
-    .channel(`thread-${me}-${recipientId}`)
+    .channel(`thread-${me}-${recipientId}-${Math.random().toString(36).slice(2)}`)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${me}` },

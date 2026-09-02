@@ -115,15 +115,6 @@ export async function addComment(flipId: string, body: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function deleteComment(flipId: string, id: string): Promise<void> {
-  if (!isRealFlipId(flipId)) {
-    localComments[flipId] = getLocal(flipId).filter(c => c.id !== id);
-    emitLocal();
-    return;
-  }
-  await supabase.from('comments').delete().eq('id', id);
-}
-
 // Live-subscribe to comment changes for a flip. Returns a cleanup function.
 export function subscribeComments(flipId: string, onChange: () => void): () => void {
   if (!isRealFlipId(flipId)) {

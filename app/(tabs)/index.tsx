@@ -435,9 +435,9 @@ export default function HomeScreen() {
     listRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [dbFlips[0]?.id]);
 
-  // The Following feed shows only people you follow. For You / Local show the
-  // real database flips; the seeded mock flips are only a fallback for when
-  // there are no real flips yet (so the feed is never empty in a fresh setup).
+  // Following shows only people you follow; For You shows everyone. The seeded
+  // demo flips are a fallback for when the database has none at all, so a fresh
+  // setup never opens on an empty screen - with real listings they never show.
   const feedData: FeedItem[] =
     activeTab === FOLLOWING_TAB ? dbFlips : dbFlips.length > 0 ? dbFlips : FLIPS;
 

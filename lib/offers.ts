@@ -70,8 +70,3 @@ export async function getMyOffers(): Promise<OfferItem[]> {
   }));
   return [...local, ...dbItems];
 }
-
-export function subscribeLocalOffers(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}

@@ -52,5 +52,5 @@ yarn-error.*
 # Working documents - reports, demo scripts. Kept locally, not part of the app.
 *.docx
 
-# Claude Code / AI tooling
+# Local editor and tooling folders
 .claude/

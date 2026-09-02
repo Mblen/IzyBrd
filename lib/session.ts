@@ -7,10 +7,6 @@ import { supabase, isSupabaseConfigured } from './supabase';
 
 let cachedSignedIn = false;
 
-export function knownSignedIn(): boolean {
-  return cachedSignedIn;
-}
-
 export async function isSignedIn(): Promise<boolean> {
   if (!isSupabaseConfigured) return true; // no backend: nothing to gate
   const { data } = await supabase.auth.getSession();

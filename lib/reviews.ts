@@ -57,17 +57,6 @@ export async function getSellerReviews(sellerId: string): Promise<Review[]> {
   }));
 }
 
-// Whether the signed-in user has already reviewed this order.
-export async function hasReviewed(orderId: string): Promise<boolean> {
-  if (!orderId) return false;
-  const { data } = await supabase
-    .from('reviews')
-    .select('id')
-    .eq('order_id', orderId)
-    .maybeSingle();
-  return !!data;
-}
-
 export async function addReview(
   orderId: string,
   sellerId: string,
