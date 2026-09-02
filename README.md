@@ -147,6 +147,7 @@ the database - if you change the schema, change it here too.
 | `messages` | Direct messages between two users |
 | `reviews` | Seller ratings, tied to an order |
 | `wardrobe_items` | A user's private closet, from the scanner |
+| `scan_events` | One row per AI scan, used to rate limit. Written only by the edge function |
 
 Two triggers do work the client cannot be trusted to do:
 
@@ -172,7 +173,6 @@ Supabase Auth, email and password. `lib/session.ts` wraps it:
 - `isSignedIn()` - async check
 - `requireAuth()` - checks, and routes to `/auth` if not; returns false so the
   caller can bail out
-- `knownSignedIn()` - synchronous best-guess for first render
 
 Browsing is open to guests. Home and Discover work signed out; liking, saving,
 commenting, selling, messaging and buying call `requireAuth()` first. That is
