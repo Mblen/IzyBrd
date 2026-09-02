@@ -276,3 +276,9 @@ ordered by whether the product is incomplete without it.
 
 See `TESTING.md` for the full manual test checklist, including the failure
 cases that matter most and the tasks to give a first-time tester.
+
+## Joining the project
+
+`ONBOARDING.md` is the guided tour - how the app is laid out, the conventions
+that are not obvious, the traps that cost time, and what is worth picking up
+first.
