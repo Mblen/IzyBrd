@@ -1,10 +1,4 @@
-# Working on IzyBrd
 
-Hey! This is everything I wish someone had told me when I started. The README
-has the setup stuff, this is more like the tour — what's here, why some things
-look weird, and the stuff that made me lose a whole day so you don't have to.
-
----
 
 ## Get it running first
 
