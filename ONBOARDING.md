@@ -1,187 +1,193 @@
 # Working on IzyBrd
 
-Notes for whoever is joining me on this. The README covers setup and structure;
-this is the tour — what is here, why it is the way it is, and the things that
-will waste a day if nobody tells you.
+Hey! This is everything I wish someone had told me when I started. The README
+has the setup stuff, this is more like the tour — what's here, why some things
+look weird, and the stuff that made me lose a whole day so you don't have to.
 
 ---
 
-## First, get it running
+## Get it running first
 
 ```bash
 npm install
 npx expo start
 ```
 
-Press `w` for web. You need a `.env` file — copy `.env.example` and I will send
-you the two Supabase values. Nothing works without them.
+Press `w` for web. You need a `.env` file — copy `.env.example` and I'll send
+you the two Supabase values. Nothing works without them, so ask me before you
+start debugging.
 
-The live app is at **https://izybrd.netlify.app**. Open it on your phone before
-you read any code. Fifteen minutes of using it is worth more than an hour of
-reading.
+The live app is **https://izybrd.netlify.app**. Honestly, open it on your phone
+and just use it for 15 minutes before reading any code. It'll make way more
+sense.
 
 ---
 
-## How the app is laid out
+## How it's organised
 
-Three folders, and they only talk downwards:
+Three folders:
 
 ```
-app/          the screens. The file tree IS the navigation (Expo Router)
-components/   UI used by more than one screen
-lib/          every database call in the project
+app/          the screens (the file names literally ARE the routes)
+components/   stuff used by more than one screen
+lib/          anything that talks to the database
 ```
 
-**The one rule I would ask you to keep: screens never import `supabase`
-directly.** They call a function in `lib/`. It means every query in the project
-is in one folder, and if we ever move off Supabase we would not touch a single
-screen.
+**The one thing I'd ask you to stick to: screens don't import `supabase`
+directly, they call something in `lib/`.** That way every database query in the
+whole project is in one folder. Makes it way easier to find things, and if we
+ever switch off Supabase we wouldn't have to touch a single screen.
 
-Each file in `lib/` owns one thing, and mirrors a database table:
+Each file in `lib/` does one thing:
 
-| File | Owns |
+| File | What it does |
 |---|---|
 | `supabase.ts` | The client itself |
-| `session.ts` | Who is signed in. `requireAuth()` gates anything that needs an account |
-| `profile.ts` | Profiles and avatars |
-| `username.ts` | Handle availability, and suggesting free ones |
-| `flips.ts` | Listings, the feed query, uploading media |
+| `session.ts` | Who's logged in. `requireAuth()` blocks stuff that needs an account |
+| `profile.ts` | Profiles and profile pictures |
+| `username.ts` | Checks if a username is free, suggests other ones |
+| `flips.ts` | Listings, the feed, uploading photos |
 | `engagement.ts` | Likes and saves |
-| `comments.ts` | Comments (live) |
+| `comments.ts` | Comments (updates live) |
 | `follows.ts` | Who follows who |
-| `offers.ts` / `orders.ts` | Offers and completed purchases |
-| `messages.ts` | Direct messages (live) |
+| `offers.ts` / `orders.ts` | Offers and purchases |
+| `messages.ts` | DMs (updates live) |
 | `reviews.ts` | Seller ratings |
-| `wardrobe.ts` | The private digital wardrobe |
-| `scan.ts` | Calls the AI scanning function |
-| `images.ts` | Shrinks photos before upload |
-| `nav.ts` | `goBack()` — read the section below before using anything else |
-| `ids.ts` | Id helpers, and unguessable filenames for storage |
+| `wardrobe.ts` | The private wardrobe |
+| `scan.ts` | Calls the AI scanner |
+| `images.ts` | Shrinks photos before uploading |
+| `nav.ts` | `goBack()` — please read the section below first |
+| `ids.ts` | Random ids, and filenames people can't guess |
 
-A listing is called a **flip** everywhere in the code. That is just the word we
-landed on early.
+Heads up: a listing is called a **flip** everywhere in the code. It's just the
+word we started with and it stuck.
 
 ---
 
-## The screens, roughly in the order a user meets them
+## The screens
+
+Roughly in the order someone using the app would see them:
 
 | Screen | File |
 |---|---|
-| Sign up / sign in | `app/auth.tsx` |
-| First-run walkthrough | `app/onboarding.tsx` |
-| The feed (the main thing) | `app/(tabs)/index.tsx` |
-| Discover, categories, Scan button | `app/(tabs)/shop.tsx` |
+| Sign up / log in | `app/auth.tsx` |
+| First-time walkthrough | `app/onboarding.tsx` |
+| The feed (the main one) | `app/(tabs)/index.tsx` |
+| Discover + categories + Scan button | `app/(tabs)/shop.tsx` |
 | Search | `app/search.tsx` |
-| One listing | `app/flip/[id].tsx` |
-| Checkout and rating the seller | `app/checkout/[id].tsx` |
-| Posting a listing | `app/(tabs)/sell.tsx` |
+| A listing | `app/flip/[id].tsx` |
+| Checkout + rating the seller | `app/checkout/[id].tsx` |
+| Posting something | `app/(tabs)/sell.tsx` |
 | Live camera scanner | `app/camera-scan.tsx` |
-| Closet scan (many items, one photo) | `app/closet-scan.tsx` |
+| Closet scan (lots of items, one photo) | `app/closet-scan.tsx` |
 | The wardrobe | `app/wardrobe.tsx` |
 | Inbox | `app/(tabs)/inbox.tsx` |
-| A conversation | `app/chat/[id].tsx` |
+| A chat | `app/chat/[id].tsx` |
 | Your profile / someone else's | `app/(tabs)/profile.tsx`, `app/user/[id].tsx` |
 
 ---
 
-## Rules that are not obvious
+## Rules that aren't obvious
 
-These are all things that broke and got fixed. Please keep them.
+All of these exist because something broke. Please keep them!
 
-**Use `goBack()` from `lib/nav.ts`, never `router.back()`.**
-`router.back()` silently does nothing when there is no history behind the
-screen — which happens whenever someone opens a link directly, or lands
-somewhere after a redirect. Every X and Back button in the app was dead in that
-situation. `goBack()` falls back to a real destination.
+**Use `goBack()` from `lib/nav.ts`, not `router.back()`.**
+`router.back()` just does nothing if there's no history behind the screen —
+which happens any time someone opens a link directly or gets redirected. Every
+single X and Back button in the app was dead like this and nobody noticed for
+ages. `goBack()` sends them somewhere real instead.
 
-**Every realtime channel name needs a random suffix.**
-Two subscriptions sharing a channel name crash with *"cannot add
-postgres_changes callbacks after subscribe()"*. Look at how `subscribeLikes`
-does it and copy that.
+**Realtime channel names need a random bit on the end.**
+If two subscriptions have the same channel name the app crashes with *"cannot
+add postgres_changes callbacks after subscribe()"*. Copy how `subscribeLikes`
+does it.
 
-**`useWindowDimensions()`, never `Dimensions.get()` at the top of a file.**
-The web build runs at desktop widths and has to reflow. A value read once at
-module load is wrong forever.
+**Use `useWindowDimensions()`, never `Dimensions.get()` at the top of a file.**
+The web version runs at desktop sizes and has to resize. If you read the width
+once when the file loads it's just wrong forever.
 
-**Screens are capped at 480px and centred.** That is what keeps the app
-phone-shaped in a desktop browser instead of stretching across a monitor.
+**Screens are max 480px wide and centred.** That's what stops the app
+stretching across a whole monitor and looking broken on desktop.
 
 **Any new photo upload has to go through `shrinkImage()`.**
-Camera photos are 3–5MB and nothing here draws one above phone width. It is
-about thirty times smaller after shrinking.
+Phone photos are like 3–5MB and nothing in the app shows one bigger than phone
+width. It's about 30x smaller after.
 
-**Plain hyphens in comments, no box-drawing characters.** They break on
-Windows terminals.
-
----
-
-## Things that will waste your time if nobody says
-
-**iPhone testing does not use Expo Go.** The App Store version is pinned to an
-older SDK than this project. Test on the deployed web app instead — open
-izybrd.netlify.app in Safari and Add to Home Screen. It behaves like an app.
-Android Expo Go is fine.
-
-**The deploy rebuilds `dist/`,** so anything you write into that folder by hand
-gets deleted before it is served. The routing rule lives in `netlify.toml` for
-exactly this reason. If deep links start 404ing or the icons vanish, that file
-is the first place to look.
-
-**The scanner is capped at 40 scans an hour** and the live view scans every five
-seconds — so about three and a half minutes of continuous use hits the limit.
-Do not leave it open before a demo.
-
-**Do not add a fallback that shows a different item when one is missing.**
-There used to be `?? FLIPS['1']` in a few screens, which meant a listing that
-failed to load quietly showed a real-looking product at a real-looking price —
-including on the checkout screen. Use `components/NotFound.tsx`.
+**Plain hyphens in comments, no fancy line characters.** They break on Windows.
 
 ---
 
-## What is built, and what is not
+## Stuff that'll waste your time if nobody tells you
 
-Built and working: accounts with password reset, profiles, the feed, search,
-listings with photo galleries and video, buying, offers, messaging, comments,
-seller reviews, follows, the wardrobe, and AI scanning in three forms.
+**iPhone testing doesn't work with Expo Go.** The App Store version is stuck on
+an older SDK than we're using. Just use the live web app instead — open
+izybrd.netlify.app in Safari, then Add to Home Screen. It looks and works like
+a real app. Android Expo Go is fine though.
 
-Not built yet, roughly in the order I would do them:
+**The deploy rebuilds `dist/`**, so anything you put in that folder by hand gets
+wiped before it goes live. That's why the routing rule lives in `netlify.toml`.
+If links suddenly 404 or all the icons disappear, check that file first — that
+exact thing happened like three times before I worked out why.
 
-1. **Real payments.** Checkout creates an order and charges nothing. The card on
-   screen is fixed text.
-2. **Order history** for buyers. Purchases show in the Inbox but there is no list.
-3. **Changing your password while signed in**, and deleting your account.
-4. **Shipping** — no labels, tracking or address validation.
-5. **Push notifications** for offers and messages.
-6. **Trading.** We talk about it as buy/trade/offer, but there is no swap
-   feature — only buying and offers. Worth deciding whether to build it or stop
-   saying it.
+**The scanner only allows 40 scans an hour** and the live view scans every 5
+seconds, so about 3 and a half minutes of leaving it open hits the limit. Don't
+leave it running before a demo (learned that one the hard way).
 
-The README has the full list, sorted by whether the product is incomplete
-without it rather than by how hard it is.
+**Never add a fallback that shows a different item when one is missing.**
+There used to be `?? FLIPS['1']` in a few places, which meant if a listing
+didn't load the app just showed a completely different product at a different
+price — including on the checkout screen. Someone could've bought something
+that didn't exist. Use `components/NotFound.tsx` instead.
 
 ---
 
-## Good things to pick up first
+## What's done and what isn't
 
-Small enough to finish, real enough to matter:
+**Done:** accounts with password reset, profiles, the feed, search, listings
+with photo galleries and video, buying, offers, messaging, comments, seller
+reviews, follows, the wardrobe, and the AI scanning (three different versions).
 
-- **Order history screen.** The data is already there in `lib/orders.ts`; it
-  needs a screen. Good way to learn the codebase without breaking anything.
-- **Change password while signed in.** Supabase does the work; it is a form.
-- **The 9 demo photos repeat** across the seeded listings. Real photos would
-  make the whole thing look better immediately.
+**Not done yet**, roughly in the order I'd do them:
+
+1. **Real payments.** Checkout makes an order but doesn't charge anything. The
+   card on the screen is literally just text.
+2. **Order history** for buyers — purchases show up in the Inbox but there's no
+   actual list of what you've bought.
+3. **Changing your password when you're logged in**, and deleting your account.
+4. **Shipping** — no labels, no tracking, no address checking.
+5. **Notifications** for offers and messages.
+6. **Trading.** We describe the app as buy/trade/offer but there's no actual
+   swap feature, just buying and offers. Someone needs to decide if we build it
+   or stop saying it.
+
+The README has the full list if you want it.
+
+---
+
+## Good things to start with
+
+Small enough to actually finish, but not pointless:
+
+- **The order history screen.** All the data's already there in `lib/orders.ts`,
+  it just needs a screen. Good way to get a feel for the codebase without
+  breaking anything.
+- **Change password while logged in.** Supabase does the hard part, it's
+  basically a form.
+- **The demo photos repeat** — there are only 9 of them across all the seeded
+  listings. Real photos would instantly make the whole app look better.
 
 ---
 
 ## How we work
 
-Everything is on the `main` branch on GitHub. Pull before you start, push when
-something works. Run `npx tsc --noEmit` before pushing — it catches most
-mistakes in a few seconds.
+Everything's on `main` on GitHub. Pull before you start, push when something
+works. Run `npx tsc --noEmit` before you push, it catches most mistakes in like
+5 seconds.
 
-`TESTING.md` has the full manual checklist. It is weighted towards things going
-wrong rather than the happy path, because that is where the bugs were.
+`TESTING.md` has the checklist I use before releasing. It's mostly about things
+going wrong rather than the happy path, because that's where all the actual
+bugs were.
 
-Ask me anything. Most of the odd-looking decisions in here have a reason, and
-the commit messages explain them — `git log` on a file is usually faster than
+Seriously just ask me anything. Most of the weird-looking decisions have a
+reason behind them, and `git log` on a file usually explains it faster than
 guessing.
