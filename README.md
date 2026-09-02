@@ -2,9 +2,9 @@
 
 A mobile marketplace for buying and selling second-hand sweatshirts, aimed at
 college students but open to anyone. Think a shopping app with a TikTok-style
-feed: you scroll full-screen listings, tap one, and buy it or make an offer.
+feed: you scroll full-screen listings, tap one, and buy it, make an offer or trade.
 
-A listing is called a **flip**. Everything in the app is a sweatshirt - hoodies,
+A listing is called a **flip the bird**. Everything in the app is a sweatshirt - hoodies,
 crews, zip-ups, mock necks. That narrowness is deliberate and is the product.
 
 Built with React Native + Expo (TypeScript), Expo Router for navigation, and
